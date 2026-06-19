@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ฝึกอ่านโน้ตดนตรีสากล (Call & Response)</title>
+    <style>
+        /* === โทนสีและฟอนต์ (Modern Palette) === */
+        :root {
+            --bg-color: #f0f4f8;
+            --card-bg: #ffffff;
+            --text-main: #2d3748;
+            --text-muted: #718096;
+            --primary: #4299e1;
+            --secondary: #ed8936;
+            --success: #48bb78;
+            --purple: #9f7aea;
+            --dark: #2d3748;
+            --shadow-soft: 0 10px 25px rgba(0, 0, 0, 0.05);
+            --shadow-hover: 0 15px 35px rgba(0, 0, 0, 0.1);
+            --radius-md: 16px;
+            --radius-lg: 24px;
+        }
+
+        body {
+            font-family: 'Prompt', 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at top right, #e2e8f0 0%, transparent 40%), 
+                              radial-gradient(circle at bottom left, #e2e8f0 0%, transparent 40%);
+            padding: 1rem;
+            color: var(--text-main);
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .game-wrapper {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* === Card Containers === */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-soft);
+            padding: 30px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* === Staff Styles (บรรทัดห้าเส้น) === */
+        .container {
+            position: relative;
+            width: 100%;
+            padding-top: 40px;
+            padding-bottom: 20px;
+            overflow: hidden;
+        }
+
+        /* กล่องแจ้งผลสถานะเสียง (Pitch Feedback) */
+        .pitch-feedback-container {
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 24px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            display: none;
+            transition: all 0.3s ease;
+            text-align: center;
+            min-width: 200px;
+        }
+        .pitch-feedback-container.active { display: block; animation: bounceIn 0.4s ease; }
+        
+        .feedback-neutral { color: var(--text-muted); border: 2px solid #e2e8f0; }
+        .feedback-correct { color: var(--success); background: #f0fff4; border: 2px solid var(--success); transform: translateX(-50%) scale(1.05); }
+        .feedback-high { color: var(--secondary); background: #fffaf0; border: 2px solid var(--secondary); }
+        .feedback-low { color: var(--primary); background: #ebf8ff; border: 2px solid var(--primary); }
+        .feedback-guide { color: var(--purple); background: #faf5ff; border: 2px solid var(--purple); }
+        .feedback-info { color: #3182ce; background: #ebf8ff; border: 2px solid #3182ce; } /* สีสำหรับแจ้งข้อมูล Call & Response */
+
+        @keyframes bounceIn {
+            0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            100% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        .staff-lines {
+            position: absolute;
+            width: calc(100% - 60px);
+            height: 120px;
+            top: 40px;
+            left: 30px;
+        }
+
+        .custom-hr {
+            border: none;
+            border-top: 2px solid #2d3748;
+            margin: 0;
+            position: absolute;
+            width: 100%;
+        }
+        .hr1 { top: 20px; }
+        .hr2 { top: 40px; }
+        .hr3 { top: 60px; }
+        .hr4 { top: 80px; }
+        .hr5 { top: 100px; }
+
+        .staff-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            padding-left: 90px;
+            padding-right: 30px;
+            z-index: 10;
+        }
+
+        .g-clef {
+            position: absolute;
+            left: 10px;
+            top: -35px;
+            height: 190px;
+            width: auto;
+        }
+
+        .note-position {
+            position: relative;
+            flex-grow: 1;
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .whole-note {
+            position: absolute;
+            width: 35px;
+            transition: filter 0.2s ease-in-out, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .whole-note.current-note {
+            filter: drop-shadow(0 0 10px rgba(66, 153, 225, 0.8));
+            transform: scale(1.25);
+            z-index: 5;
+        }
+        
+        /* สไตล์ใหม่สำหรับโหมด Response (ตานักเรียนร้อง) สีม่วง */
+        .whole-note.response-note {
+            filter: drop-shadow(0 0 12px rgba(159, 122, 234, 0.9)) hue-rotate(240deg);
+            transform: scale(1.3);
+            z-index: 6;
+        }
+
+        .whole-note.correct-pitch {
+            filter: drop-shadow(0 0 15px rgba(72, 187, 120, 1)) hue-rotate(90deg);
+            transform: scale(1.3);
+            transition: all 0.2s;
+        }
+
+        .ledger-line {
+            position: absolute;
+            border-top: 3px solid #2d3748;
+            width: 55px;
+            display: none;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 2px;
+        }
+
+        .accidental {
+            position: absolute;
+            font-size: 38px;
+            font-weight: normal;
+            display: none;
+            left: 50%;
+            transform: translateX(-45px);
+            color: var(--text-main);
+            text-shadow: 1px 1px 0px #fff, -1px -1px 0px #fff, 1px -1px 0px #fff, -1px 1px 0px #fff;
+        }
+        
+        .note-name {
+            position: absolute;
+            font-size: 15px;
+            font-weight: bold;
+            text-align: center;
+            width: 45px;
+            color: #e53e3e;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 4px;
+            padding: 2px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .note-name.hidden { display: none; }
+
+        /* === Controls & Buttons Styles === */
+        .main-controls {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .main-controls button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 14px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .main-controls button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+            filter: brightness(1.05);
+        }
+
+        .main-controls button:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .main-controls button.hidden-btn { display: none; }
+
+        #randomButton { background: linear-gradient(135deg, #4299e1, #3182ce); }
+        #toggleNoteNamesButton { background: linear-gradient(135deg, #48bb78, #38a169); }
+        #arrangeNotesButton { background: linear-gradient(135deg, #ed8936, #dd6b20); }
+        #toggleAccidentalsButton { background: linear-gradient(135deg, #9f7aea, #805ad5); }
+        #togglePianoButton { background: linear-gradient(135deg, #a0aec0, #718096); }
+        #openMetronomeBtn { background: linear-gradient(135deg, #4a5568, #2d3748); }
+        
+        #toggleMicButton { background: linear-gradient(135deg, #e53e3e, #c53030); }
+        #toggleMicButton.mic-active { background: linear-gradient(135deg, #f56565, #fc8181); animation: pulse-red 2s infinite; }
+        #replayToneButton { background: linear-gradient(135deg, #38b2ac, #319795); }
+        #nextNoteButton { background: linear-gradient(135deg, #d69e2e, #b7791f); }
+        
+        /* === Group Selection Buttons === */
+        .group-selector-card { padding: 20px; transform: translateX(24px); }
+        .control-group-title { width: 100%; text-align: center; font-weight: bold; color: var(--text-muted); margin-bottom: 15px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        .button-group { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+        .button-group button { padding: 10px 18px; font-size: 14px; font-weight: 600; cursor: pointer; background-color: #f7fafc; color: #4a5568; border: 2px solid #e2e8f0; border-radius: 10px; transition: all 0.2s ease; }
+        .button-group button:hover { border-color: #cbd5e0; background-color: #edf2f7; transform: translateY(-2px); }
+        .button-group button.active { background-color: #ebf8ff; color: #3182ce; border-color: #63b3ed; box-shadow: 0 4px 10px rgba(66, 153, 225, 0.15); }
+
+        /* === Modals Styles === */
+        .metronome-card { text-align: center; background: linear-gradient(to bottom, #ffffff, #f7fafc); }
+        .metronome-card h2 { margin-top: 0; color: var(--text-main); font-size: 20px; margin-bottom: 20px; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(4px); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-overlay.show { opacity: 1; pointer-events: auto; }
+        .modal-content { position: relative; max-width: 400px; width: 90%; }
+        .close-btn { position: absolute; top: 15px; right: 15px; font-size: 28px; background: none; border: none; cursor: pointer; color: var(--text-muted); transition: color 0.2s; line-height: 1; }
+        .close-btn:hover { color: var(--text-main); }
+        
+        .mode-btn { width: 100%; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: bold; color: white; border: none; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin-bottom: 12px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .mode-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.2); filter: brightness(1.05); }
+        .btn-vocal { background: linear-gradient(135deg, #e53e3e, #c53030); }
+        .btn-read { background: linear-gradient(135deg, #4299e1, #3182ce); }
+        .btn-ready { background: linear-gradient(135deg, #48bb78, #38a169); font-size: 18px; padding: 18px; margin-top: 15px; } /* ปุ่มกดเมื่อพร้อม */
+
+        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7); } 70% { box-shadow: 0 0 0 12px rgba(229, 62, 62, 0); } 100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0); } }
+        .metronome-active-pulse { background: linear-gradient(135deg, #f56565, #e53e3e) !important; animation: pulse-red 1.5s infinite; }
+
+        .beat-selector { display: flex; justify-content: center; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .beat-selector button { padding: 8px 16px; border: 1px solid #e2e8f0; background: white; border-radius: 20px; color: var(--text-muted); font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
+        .beat-selector button.active { background: var(--dark); color: white; border-color: var(--dark); }
+        .beat-btn-cr { background: linear-gradient(135deg, #9f7aea, #805ad5) !important; color: white !important; border: none !important; }
+
+        .controls label { display: block; margin-bottom: 10px; font-weight: bold; color: var(--text-main); }
+        input[type="range"] { width: 80%; margin-bottom: 20px; accent-color: var(--primary); }
+
+        #start-stop { background: linear-gradient(135deg, #f56565, #e53e3e); color: white; border: none; padding: 12px 40px; border-radius: 25px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3); transition: transform 0.2s, box-shadow 0.2s; }
+        #start-stop:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(229, 62, 62, 0.4); }
+
+        /* === Piano Styles === */
+        .piano-container { display: flex; justify-content: center; transition: opacity 0.3s ease, transform 0.3s ease; transform: translateX(36px); }
+        .piano-container.hidden { opacity: 0; transform: translateX(36px) scale(0.95) translateY(-20px); pointer-events: none; height: 0; margin: 0; overflow: hidden; }
+
+        .piano { display: flex; position: relative; background: #1a202c; padding: 12px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 4px 0 rgba(255,255,255,0.1); }
+        .key { cursor: pointer; box-sizing: border-box; transition: background-color 0.1s ease, transform 0.05s ease; position: relative; display: flex; justify-content: center; user-select: none; }
+        .key.white { width: 54px; height: 180px; background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%); border-radius: 0 0 6px 6px; border: 1px solid #ccc; border-top: none; align-items: flex-end; box-shadow: inset 0 -2px 5px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.2); margin: 0 1px; z-index: 1; }
+        .key.white.active { background: #e2e8f0; transform: rotateX(2deg) translateY(2px); box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); }
+        .key.black { width: 36px; height: 105px; background: linear-gradient(to bottom, #2d3748 0%, #1a202c 100%); position: absolute; z-index: 2; border-radius: 0 0 5px 5px; box-shadow: inset 0 -3px 6px rgba(255,255,255,0.2), inset 0 2px 4px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.5); align-items: flex-end; padding-bottom: 10px; margin-left: -18px; }
+        .key.black.active { background: #1a202c; transform: rotateX(2deg) translateY(2px); box-shadow: inset 0 -1px 2px rgba(255,255,255,0.1), inset 0 2px 6px rgba(0,0,0,0.8); }
+
+        .key-label { font-weight: 700; font-size: 14px; pointer-events: none; }
+        .key.white .key-label { color: #4a5568; padding-bottom: 12px; }
+        .key.black .key-label { color: #a0aec0; font-size: 11px; line-height: 1.2; text-align: center; }
+
+        .key[data-note="Db4"] { left: 56px; } .key[data-note="Eb4"] { left: 112px; } .key[data-note="Gb4"] { left: 224px; } .key[data-note="Ab4"] { left: 280px; } .key[data-note="Bb4"] { left: 336px; } .key[data-note="Db5"] { left: 448px; } .key[data-note="Eb5"] { left: 504px; } .key[data-note="Gb5"] { left: 616px; } .key[data-note="Ab5"] { left: 672px; } .key[data-note="Bb5"] { left: 728px; }
+        
+        .site-footer { text-align: center; margin-top: 20px; padding: 20px; color: var(--text-muted); font-size: 14px; border-radius: var(--radius-lg); transform: translateX(22px); }
+        .site-footer p { margin: 4px 0; }
+        .layout-grid { display: grid; grid-template-columns: 1fr; gap: 24px; }
+        @media (min-width: 900px) { .layout-grid { grid-template-columns: 1fr; } .full-width { grid-column: 1 / -1; } }
+
+        .landscape-warning { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(4px); z-index: 50; justify-content: center; align-items: center; text-align: center; border-radius: var(--radius-lg); flex-direction: column; }
+        .landscape-warning p { margin: 0; font-size: 16px; font-weight: 600; color: var(--text-main); line-height: 1.5; }
+        .tilt-icon { font-size: 48px; display: inline-block; margin-bottom: 10px; animation: tilt-phone 2s infinite ease-in-out; }
+        @keyframes tilt-phone { 0%, 10% { transform: rotate(0deg); } 40%, 60% { transform: rotate(-90deg); } 90%, 100% { transform: rotate(0deg); } }
+
+        @media (max-width: 768px) {
+            .card { padding: 15px; } .staff-content { padding-left: 60px; padding-right: 10px; } .g-clef { height: 140px; left: 5px; top: -15px; } .whole-note { width: 28px; } .ledger-line { width: 45px; } .accidental { font-size: 30px; transform: translateX(-35px); } .piano { transform: scale(0.65); transform-origin: top center; margin-bottom: -30px; } .main-controls button { padding: 10px 16px; font-size: 14px; } .note-name { font-size: 12px; width: 35px; }
+        }
+        @media (max-width: 768px) and (orientation: portrait) { .landscape-warning { display: flex; } .staff-content { opacity: 0; pointer-events: none; } }
+        @media (max-width: 500px) { .piano { transform: scale(0.48); margin-bottom: -60px;} }
+    </style>
+</head>
+<body>
+<div class="game-wrapper">
+
+    <!-- Area 1: Staff & Visualization -->
+    <div class="card container full-width">
+        <div id="pitch-feedback" class="pitch-feedback-container feedback-neutral">
+            🎤 กดเปิดไมค์เพื่อเริ่มประเมินเสียงร้อง
+        </div>
+
+        <div class="staff-lines">
+            <hr class="custom-hr hr1"><hr class="custom-hr hr2"><hr class="custom-hr hr3"><hr class="custom-hr hr4"><hr class="custom-hr hr5">
+        </div>
+        <div class="staff-content">
+            <img src="https://i.ibb.co/qj4js0r/G-clef-svg.png" alt="G Clef" class="g-clef">
+            <!-- Note positions generated by JS -->
+        </div>
+        
+        <div class="landscape-warning">
+            <div class="tilt-icon">📱</div>
+            <p>กรุณาหมุนโทรศัพท์เป็นแนวนอน<br>เพื่อฝึกอ่านโน้ต</p>
+        </div>
+    </div>
+    
+    <!-- Area 2: Piano -->
+    <div class="piano-container full-width">
+        <div class="piano">
+            <!-- White Keys -->
+            <div class="key white" data-note="C4"></div><div class="key white" data-note="D4"></div><div class="key white" data-note="E4"></div><div class="key white" data-note="F4"></div><div class="key white" data-note="G4"></div><div class="key white" data-note="A4"></div><div class="key white" data-note="B4"></div><div class="key white" data-note="C5"></div><div class="key white" data-note="D5"></div><div class="key white" data-note="E5"></div><div class="key white" data-note="F5"></div><div class="key white" data-note="G5"></div><div class="key white" data-note="A5"></div><div class="key white" data-note="B5"></div>
+            <!-- Black Keys -->
+            <div class="key black" data-note="Db4"></div><div class="key black" data-note="Eb4"></div><div class="key black" data-note="Gb4"></div><div class="key black" data-note="Ab4"></div><div class="key black" data-note="Bb4"></div><div class="key black" data-note="Db5"></div><div class="key black" data-note="Eb5"></div><div class="key black" data-note="Gb5"></div><div class="key black" data-note="Ab5"></div><div class="key black" data-note="Bb5"></div>
+        </div>
+    </div>
+
+    <!-- Area 3: Main Controls -->
+    <div class="layout-grid">
+        <div class="card group-selector-card full-width">
+            <div class="main-controls">
+                <button id="togglePianoButton">🎹 ซ่อนเปียโน</button>
+                
+                <button id="toggleMicButton" class="hidden-btn" onclick="toggleMic()">🎤 เปิดไมค์</button>
+                <button id="replayToneButton" class="hidden-btn" onclick="playCurrentGuideTone()">🔊 ฟังไกด์โน้ต</button>
+                <button id="nextNoteButton" class="hidden-btn" onclick="advanceSequence()">➡️ ข้ามตัวนี้</button>
+
+                <button id="randomButton" onclick="handleRandomClick()">🎲 สุ่มโน้ตใหม่</button>
+                <button id="arrangeNotesButton" onclick="arrangeNotesInOrder()">📈 เรียงโน้ต</button>
+                <button id="toggleAccidentalsButton" onclick="toggleAccidentalsMode()">♯ สุ่มเครื่องหมาย</button>
+                <button id="toggleNoteNamesButton" onclick="cycleNoteNames()">🇹🇭 ชื่อแบบไทย</button>
+                <button id="openMetronomeBtn">⏱️ ตั้งค่าจังหวะ</button>
+            </div>
+            
+            <div class="control-group-title">เลือกระดับความยาก (กลุ่มตัวโน้ต)</div>
+            <div class="button-group" id="button-group-container">
+                <!-- Buttons generated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <footer class="site-footer card full-width">
+        <p id="copyright-notice"></p>
+        <p>โรงเรียนธัญรัตน์ จังหวัดปทุมธานี</p>
+    </footer>
+
+</div>
+
+<!-- Modal 1: โหมดฝึกซ้อม (ขึ้นมาตอนกดซ่อนเปียโน) -->
+<div id="modeSelectModal" class="modal-overlay">
+    <div class="card metronome-card modal-content">
+        <h2>เลือกรูปแบบการฝึกซ้อม</h2>
+        <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 15px;">เมื่อซ่อนเปียโน คุณครูต้องการให้ระบบทำงานในรูปแบบใด?</p>
+        <div style="display: flex; flex-direction: column;">
+            <button class="mode-btn btn-vocal" onclick="prepareVocalMode()">🎤 ฝึกฟังและออกเสียง (ซ้อมร้องทีละตัว)</button>
+            <button class="mode-btn btn-read" onclick="selectReadMode()">👁️ ฝึกอ่านโน้ตปกติ (แฟลชการ์ดเงียบ)</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal 2: เตรียมตัวก่อนร้อง (ขึ้นมาดักก่อนเริ่มเล่นเสียง) -->
+<div id="readyCheckModal" class="modal-overlay">
+    <div class="card metronome-card modal-content" style="padding: 40px 20px;">
+        <h2 style="font-size: 24px; margin-bottom: 15px;">🎧 เตรียมตัวให้พร้อม</h2>
+        <p style="margin-bottom: 20px; color: var(--text-muted); font-size: 16px;">
+            ระบบสุ่มโน้ตเสร็จเรียบร้อยแล้ว<br>นักเรียนสามารถกวาดสายตาดูโน้ตล่วงหน้าได้เลย
+        </p>
+        <p style="margin-bottom: 25px; color: var(--primary); font-size: 14px; font-weight: 600;">
+            *อย่าลืมกดปุ่ม "เปิดไมค์" ด้านบน หากต้องการให้ระบบช่วยประเมินเสียงร้อง
+        </p>
+        <button class="mode-btn btn-ready" onclick="startVocalSession()">
+            ✅ กดเมื่อพร้อมเริ่มฟัง
+        </button>
+    </div>
+</div>
+
+<!-- Modal: Metronome -->
+<div id="metronomeModal" class="modal-overlay">
+    <div class="card metronome-card modal-content">
+        <button id="closeMetronomeBtn" class="close-btn">&times;</button>
+        <h2>⏱️ เมโทรนอม (จังหวะ)</h2>
+        <div class="beat-selector">
+            <button class="beat-btn active" data-beat="click">Click</button>
+            <button class="beat-btn" data-beat="popRock">Pop/Rock</button>
+            <button class="beat-btn" data-beat="funk">Funk</button>
+            <button class="beat-btn" data-beat="disco">Disco</button>
+            <button class="beat-btn beat-btn-cr" data-beat="callResponse">ฟัง-อ่าน-ร้อง</button>
+        </div>
+        <div class="controls">
+            <label for="tempo">ความเร็ว: <span id="tempo-value">60</span> BPM</label>
+            <input type="range" id="tempo" min="40" max="200" value="60">
+        </div>
+        <button id="start-stop">เริ่มจังหวะ</button>
+    </div>
+</div>
+
+    <script>
+        // =========================================================
+        // 1. STATE MANAGEMENT (จัดการข้อมูลส่วนกลางเพื่อความเสถียร)
+        // =========================================================
+        const AppState = {
+            gameMode: 'playAlong', // 'playAlong', 'vocalPractice', 'readPractice'
+            sequence: [],
+            currentStep: 0,
+            currentPositions: [-10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110],
+            selectedPositions: [],
+            noteNameDisplayMode: 'en',
+            currentNoteTops: new Array(9).fill(null), // ปรับเป็น 9 ตัวโน้ต
+            isAccidentalMode: false,
+            
+            // Audio States
+            micActive: false,
+            guideTonePlaying: false,
+            correctFrames: 0,
+            framesToPass: 20,
+            toleranceCents: 45, 
+            
+            // Metronome States
+            metronomeMode: 'click',
+            metronomeRunning: false,
+            metronomePausedForReady: false, // สถานะหยุดรอเพื่อให้นักเรียนกดปุ่มพร้อม
+
+            // Call & Response States (ฟัง-อ่าน-ร้อง)
+            CR: {
+                phase: 'countIn', // 'countIn', 'call', 'response'
+                tick: 0,
+                currentSet: 0,
+                activeTargetNote: null // โน้ตเป้าหมายสำหรับให้ไมค์ตรวจสอบคีย์ (เรียลไทม์)
+            }
+        };
+
+        const ACCIDENTAL_SYMBOLS = ['♯', '♭'];
+
+        const noteData = {
+            '-10': { en: 'A', th: 'ลา', th_short: 'ล' }, '0': { en: 'G', th: 'ซอล', th_short: 'ซ' }, '10': { en: 'F', th: 'ฟา', th_short: 'ฟ' }, '20': { en: 'E', th: 'มี', th_short: 'ม' }, '30': { en: 'D', th: 'เร', th_short: 'ร' }, '40': { en: 'C', th: 'โด', th_short: 'ด' }, '50': { en: 'B', th: 'ที', th_short: 'ท' }, '60': { en: 'A', th: 'ลา', th_short: 'ล' }, '70': { en: 'G', th: 'ซอล', th_short: 'ซ' }, '80': { en: 'F', th: 'ฟา', th_short: 'ฟ' }, '90': { en: 'E', th: 'มี', th_short: 'ม' }, '100': { en: 'D', th: 'เร', th_short: 'ร' }, '110': { en: 'C', th: 'โด', th_short: 'ด' }
+        };
+
+        const positionToNoteMap = {
+            '110': 'C4', '100': 'D4', '90': 'E4', '80': 'F4', '70': 'G4', '60': 'A4', '50': 'B4', '40': 'C5', '30': 'D5', '20': 'E5', '10': 'F5', '0': 'G5', '-10': 'A5', '-20': 'B5'
+        };
+        
+        const chromaticScale = [ 'C4', 'Db4', 'D4', 'Eb4', 'E4', 'F4', 'Gb4', 'G4', 'Ab4', 'A4', 'Bb4', 'B4', 'C5', 'Db5', 'D5', 'Eb5', 'E5', 'F5', 'Gb5', 'G5', 'Ab5', 'A5', 'Bb5', 'B5' ];
+
+        const buttonGroupData = [
+            { en: 'E/G', th: 'มี/ซอล', th_short: 'ม/ซ', positions: [90, 70] },
+            { en: 'E/G/A', th: 'มี/ซอล/ลา', th_short: 'ม/ซ/ล', positions: [90, 70, 60] },
+            { en: 'D/E/G/A', th: 'เร/มี/ซอล/ลา', th_short: 'ร/ม/ซ/ล', positions: [100, 90, 70, 60] },
+            { en: 'C/D/E/G/A', th: 'โด/เร/มี/ซอล/ลา', th_short: 'ด/ร/ม/ซ/ล', positions: [110, 100, 90, 70, 60] },
+            { en: 'C/D/E/F/G/A', th: 'โด/เร/มี/ฟา/ซอล/ลา', th_short: 'ด/ร/ม/ฟ/ซ/ล', positions: [110, 100, 90, 80, 70, 60] },
+            { en: 'C/D/E/F/G/A/B/C', th: 'โด/เร/มี/ฟา/ซอล/ลา/ที/โด', th_short: 'ด/ร/ม/ฟ/ซ/ล/ท/ด', positions: [110, 100, 90, 80, 70, 60, 50, 40] }
+        ];
+
+        let audioContext;
+        const currentWaveform = 'triangle';
+        const noteFrequencies = {
+            'C4': 261.63, 'Db4': 277.18, 'D4': 293.66, 'Eb4': 311.13, 'E4': 329.63,
+            'F4': 349.23, 'Gb4': 369.99, 'G4': 392.00, 'Ab4': 415.30, 'A4': 440.00,
+            'Bb4': 466.16, 'B4': 493.88, 
+            'C5': 523.25, 'Db5': 554.37, 'D5': 587.33, 'Eb5': 622.25, 'E5': 659.25,
+            'F5': 698.46, 'Gb5': 739.99, 'G5': 783.99, 'Ab5': 830.61, 'A5': 880.00,
+            'Bb5': 932.33, 'B5': 987.77
+        };
+        const activeOscillators = {};
+
+        const enharmonicNames = {
+            'Db4': ['C♯', 'D♭'], 'Eb4': ['D♯', 'E♭'], 'Gb4': ['F♯', 'G♭'], 'Ab4': ['G♯', 'A♭'], 'Bb4': ['A♯', 'B♭'],
+            'Db5': ['C♯', 'D♭'], 'Eb5': ['D♯', 'E♭'], 'Gb5': ['F♯', 'G♭'], 'Ab5': ['G♯', 'A♭'], 'Bb5': ['A♯', 'B♭']
+        };
+        const pianoKeyThaiNames = {
+            'C4': 'ด', 'Db4': ['ด♯', 'ร♭'], 'D4': 'ร', 'Eb4': ['ร♯', 'ม♭'], 'E4': 'ม', 'F4': 'ฟ', 'Gb4': ['ฟ♯', 'ซ♭'], 'G4': 'ซ', 'Ab4': ['ซ♯', 'ล♭'], 'A4': 'ล', 'Bb4': ['ล♯', 'ท♭'], 'B4': 'ท',
+            'C5': 'ด', 'Db5': ['ด♯', 'ร♭'], 'D5': 'ร', 'Eb5': ['ร♯', 'ม♭'], 'E5': 'ม', 'F5': 'ฟ', 'Gb5': ['ฟ♯', 'ซ♭'], 'G5': 'ซ', 'Ab5': ['ซ♯', 'ล♭'], 'A5': 'ล', 'Bb5': ['ล♯', 'ท♭'], 'B5': 'ท'
+        };
+
+        // =========================================================
+        // 2. AUDIO SYSTEM & LIFECYCLE (จัดการทรัพยากรเสียง)
+        // =========================================================
+        function initAudio() {
+            if (!audioContext) {
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                } catch (e) {
+                    console.error("Web Audio API is not supported.");
+                    alert("เบราว์เซอร์ของคุณไม่รองรับการสร้างเสียง");
+                }
+            }
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+        }
+
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === 'hidden') {
+                stopAllNotes();
+                if (audioContext && audioContext.state === 'running') {
+                    audioContext.suspend();
+                }
+            } else {
+                if (audioContext && audioContext.state === 'suspended') {
+                    audioContext.resume();
+                }
+            }
+        });
+
+        function stopAllNotes() {
+            if (!audioContext) return;
+            for (let note in activeOscillators) {
+                const keyElement = document.querySelector(`.piano .key[data-note="${note}"]`);
+                if (keyElement && keyElement.classList.contains('active')) continue;
+
+                const activeNote = activeOscillators[note];
+                try {
+                    activeNote.gainNode.gain.cancelScheduledValues(audioContext.currentTime);
+                    activeNote.gainNode.gain.setValueAtTime(activeNote.gainNode.gain.value, audioContext.currentTime);
+                    activeNote.gainNode.gain.linearRampToValueAtTime(0.001, audioContext.currentTime + 0.02);
+                    activeNote.oscillator.stop(audioContext.currentTime + 0.02);
+                } catch(e) {}
+                delete activeOscillators[note];
+            }
+        }
+
+        function playNote(note) {
+            if (!audioContext) return;
+            const freq = noteFrequencies[note];
+            if (!freq) return;
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.type = currentWaveform;
+            oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            gainNode.gain.setValueAtTime(0.001, audioContext.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + 0.02);
+            oscillator.start(audioContext.currentTime);
+            activeOscillators[note] = { oscillator, gainNode };
+        }
+
+        function stopNote(note) {
+            if (!audioContext || !activeOscillators[note]) return;
+            const activeNote = activeOscillators[note];
+            try {
+                activeNote.gainNode.gain.cancelScheduledValues(audioContext.currentTime);
+                activeNote.gainNode.gain.setValueAtTime(activeNote.gainNode.gain.value, audioContext.currentTime);
+                activeNote.gainNode.gain.linearRampToValueAtTime(0.001, audioContext.currentTime + 0.15);
+                activeNote.oscillator.stop(audioContext.currentTime + 0.15);
+            } catch(e) {}
+            delete activeOscillators[note];
+        }
+
+        // =========================================================
+        // 3. PITCH DETECTION (ประเมินเสียงร้อง)
+        // =========================================================
+        let mediaStreamSource = null;
+        let analyser = null;
+        let pitchIntervalId = null;
+        
+        const correlationBuffer = new Float32Array(2048);
+        const correlationArray = new Float32Array(2048);
+
+        function autoCorrelateOptimized(buf, sampleRate) {
+            let SIZE = buf.length;
+            let rms = 0;
+            for (let i = 0; i < SIZE; i++) { let val = buf[i]; rms += val * val; }
+            rms = Math.sqrt(rms / SIZE);
+            if (rms < 0.02) return -1; 
+
+            let r1 = 0, r2 = SIZE - 1, thres = 0.2;
+            for (let i = 0; i < SIZE / 2; i++) if (Math.abs(buf[i]) < thres) { r1 = i; break; }
+            for (let i = 1; i < SIZE / 2; i++) if (Math.abs(buf[SIZE - i]) < thres) { r2 = SIZE - i; break; }
+
+            const validBuf = buf.subarray(r1, r2);
+            SIZE = validBuf.length;
+
+            correlationArray.fill(0);
+            for (let i = 0; i < SIZE; i++) {
+                for (let j = 0; j < SIZE - i; j++) {
+                    correlationArray[i] += validBuf[j] * validBuf[j + i];
+                }
+            }
+
+            let d = 0; while (correlationArray[d] > correlationArray[d + 1]) d++;
+            let maxval = -1, maxpos = -1;
+            for (let i = d; i < SIZE; i++) { 
+                if (correlationArray[i] > maxval) { maxval = correlationArray[i]; maxpos = i; } 
+            }
+            
+            let T0 = maxpos;
+            let x1 = correlationArray[T0 - 1], x2 = correlationArray[T0], x3 = correlationArray[T0 + 1];
+            let a = (x1 + x3 - 2 * x2) / 2;
+            let b = (x3 - x1) / 2;
+            if (a) T0 = T0 - b / (2 * a);
+
+            return sampleRate / T0;
+        }
+
+        async function toggleMic() {
+            const micBtn = document.getElementById('toggleMicButton');
+            const feedbackContainer = document.getElementById('pitch-feedback');
+            
+            if (!AppState.micActive) {
+                try {
+                    initAudio(); 
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+                    
+                    mediaStreamSource = audioContext.createMediaStreamSource(stream);
+                    analyser = audioContext.createAnalyser();
+                    analyser.fftSize = 2048;
+                    mediaStreamSource.connect(analyser);
+                    
+                    AppState.micActive = true;
+                    micBtn.innerHTML = '🔴 ปิดไมค์';
+                    micBtn.classList.add('mic-active');
+                    feedbackContainer.classList.add('active');
+                    
+                    AppState.correctFrames = 0;
+                    startPitchDetectionLoop();
+                    
+                } catch (err) {
+                    alert('ไม่สามารถเข้าถึงไมโครโฟนได้ กรุณาตรวจสอบการอนุญาตใช้งานไมโครโฟนบนเบราว์เซอร์ของคุณครูครับ');
+                    console.error('Mic error:', err);
+                }
+            } else {
+                AppState.micActive = false;
+                if (mediaStreamSource) {
+                    mediaStreamSource.mediaStream.getTracks().forEach(track => track.stop());
+                }
+                if (pitchIntervalId) cancelAnimationFrame(pitchIntervalId);
+                
+                micBtn.innerHTML = '🎤 เปิดไมค์';
+                micBtn.classList.remove('mic-active');
+                
+                // ถ้าระบบไม่ได้เล่น Call & Response อยู่ ให้ซ่อนกล่อง feedback ไปเลย
+                if (!(AppState.metronomeRunning && AppState.metronomeMode === 'callResponse')) {
+                    feedbackContainer.classList.remove('active');
+                } else {
+                    resetFeedbackUI(); // กลับสู่โหมดกล่องแจ้งเตือนปกติ (ไมค์ปิด)
+                }
+            }
+        }
+
+        function startPitchDetectionLoop() {
+            function updatePitch() {
+                if (!AppState.micActive) return;
+                
+                // ตรวจสอบโหมด Call & Response (จะเช็คคีย์ก็ต่อเมื่อมีโน้ตเป้าหมายใน phase response)
+                if (AppState.metronomeMode === 'callResponse' && AppState.metronomeRunning) {
+                    if (AppState.CR.activeTargetNote) {
+                        analyser.getFloatTimeDomainData(correlationBuffer);
+                        const pitch = autoCorrelateOptimized(correlationBuffer, audioContext.sampleRate);
+                        const targetFreq = noteFrequencies[AppState.CR.activeTargetNote];
+                        const feedbackEl = document.getElementById('pitch-feedback');
+
+                        if (pitch !== -1 && targetFreq) {
+                            let centsFromA4 = 1200 * Math.log2(pitch / 440);
+                            let targetCentsFromA4 = 1200 * Math.log2(targetFreq / 440);
+                            let diffCents = (centsFromA4 - targetCentsFromA4) % 1200;
+                            
+                            if (diffCents > 600) diffCents -= 1200;
+                            else if (diffCents < -600) diffCents += 1200;
+
+                            if (Math.abs(diffCents) <= AppState.toleranceCents) {
+                                feedbackEl.innerHTML = `✅ ดีมาก ตรงคีย์!`;
+                                feedbackEl.className = 'pitch-feedback-container active feedback-correct';
+                            } else if (diffCents < 0) {
+                                feedbackEl.innerHTML = `⬆️ สูงขึ้นอีกนิด`;
+                                feedbackEl.className = 'pitch-feedback-container active feedback-low';
+                            } else {
+                                feedbackEl.innerHTML = `⬇️ ต่ำลงอีกนิด`;
+                                feedbackEl.className = 'pitch-feedback-container active feedback-high';
+                            }
+                        }
+                    }
+                    pitchIntervalId = requestAnimationFrame(updatePitch);
+                    return; // ข้าม logic โหมดอื่นไปเลย
+                }
+
+                // --- โหมดเกมปกติ (Vocal Practice) ---
+                if (AppState.gameMode !== 'vocalPractice') {
+                    pitchIntervalId = requestAnimationFrame(updatePitch);
+                    return;
+                }
+                
+                if (AppState.guideTonePlaying) {
+                    pitchIntervalId = requestAnimationFrame(updatePitch);
+                    return;
+                }
+
+                analyser.getFloatTimeDomainData(correlationBuffer);
+                const pitch = autoCorrelateOptimized(correlationBuffer, audioContext.sampleRate);
+                const feedbackEl = document.getElementById('pitch-feedback');
+                
+                if (AppState.currentStep < AppState.sequence.length) {
+                    const targetNote = AppState.sequence[AppState.currentStep].targetKey;
+                    const targetFreq = noteFrequencies[targetNote];
+                    
+                    if (pitch !== -1 && targetFreq) {
+                        let centsFromA4 = 1200 * Math.log2(pitch / 440);
+                        let targetCentsFromA4 = 1200 * Math.log2(targetFreq / 440);
+                        let diffCents = (centsFromA4 - targetCentsFromA4) % 1200;
+                        
+                        if (diffCents > 600) diffCents -= 1200;
+                        else if (diffCents < -600) diffCents += 1200;
+
+                        if (Math.abs(diffCents) <= AppState.toleranceCents) {
+                            feedbackEl.innerHTML = `✅ ตรงคีย์! สุดยอดมาก`;
+                            feedbackEl.className = 'pitch-feedback-container active feedback-correct';
+                            AppState.correctFrames++;
+                            
+                            if (AppState.correctFrames > AppState.framesToPass) {
+                                AppState.correctFrames = 0;
+                                advanceSequence(); 
+                            }
+                        } else if (diffCents < 0) {
+                            feedbackEl.innerHTML = `⬆️ ร้องสูงขึ้นอีกนิด`;
+                            feedbackEl.className = 'pitch-feedback-container active feedback-low';
+                            AppState.correctFrames = 0; 
+                        } else {
+                            feedbackEl.innerHTML = `⬇️ ร้องต่ำลงอีกนิด`;
+                            feedbackEl.className = 'pitch-feedback-container active feedback-high';
+                            AppState.correctFrames = 0;
+                        }
+                    } else if (pitch === -1 && AppState.correctFrames === 0) {
+                        feedbackEl.innerHTML = `🎤 เปล่งเสียงตามโน้ตที่กระพริบ...`;
+                        feedbackEl.className = 'pitch-feedback-container active feedback-neutral';
+                    }
+                }
+                pitchIntervalId = requestAnimationFrame(updatePitch);
+            }
+            updatePitch();
+        }
+
+        // =========================================================
+        // 4. GAME & UI LOGIC (หน้าจอและการควบคุมกระดาน)
+        // =========================================================
+
+        function arrangeNotesInOrder() {
+            stopAllNotes(); 
+            clearPlayAlongState();
+            // ปรับเพิ่มโน้ต D5 (30) หรืออื่นๆ เพื่อให้ครบ 9 ตัวเรียงกัน
+            const scaleOrder = [110, 100, 90, 80, 70, 60, 50, 40, 30]; 
+            const notes = document.getElementsByClassName('whole-note');
+            for (let i = 0; i < notes.length; i++) {
+                if (i < scaleOrder.length) {
+                    const noteTop = scaleOrder[i];
+                    AppState.currentNoteTops[i] = noteTop;
+                    notes[i].style.top = `${noteTop}px`;
+                    notes[i].parentElement.style.display = 'flex';
+                    updateNoteNameForNote(i);
+                    updateLedgerLineForNote(i);
+                    updateAccidentalForNote(i, null); 
+                } else {
+                    AppState.currentNoteTops[i] = null;
+                    notes[i].parentElement.style.display = 'none';
+                }
+            }
+        }
+
+        function cycleNoteNames() {
+            const button = document.getElementById('toggleNoteNamesButton');
+            if (AppState.noteNameDisplayMode === 'en') {
+                AppState.noteNameDisplayMode = 'th';
+                button.innerHTML = '👁️ ซ่อนชื่อ';
+            } else if (AppState.noteNameDisplayMode === 'th') {
+                AppState.noteNameDisplayMode = 'hidden';
+                button.innerHTML = '🔤 ชื่อแบบสากล';
+            } else {
+                AppState.noteNameDisplayMode = 'en';
+                button.innerHTML = '🇹🇭 ชื่อแบบไทย';
+            }
+            refreshAllNoteNames();
+            updatePianoKeyLabels(); 
+            updateButtonGroupLabels();
+        }
+
+        function refreshAllNoteNames() {
+            for (let i = 0; i < 9; i++) updateNoteNameForNote(i);
+        }
+        
+        function updateNoteNameForNote(index) {
+            const notePosition = document.getElementById(`note-position-${index}`);
+            const noteNameElement = notePosition.querySelector('.note-name');
+            const accElement = notePosition.querySelector('.accidental');
+            const noteTop = AppState.currentNoteTops[index];
+
+            if (noteTop === null || AppState.noteNameDisplayMode === 'hidden') {
+                noteNameElement.classList.add('hidden');
+                return;
+            }
+
+            noteNameElement.classList.remove('hidden');
+            const noteInfo = noteData[noteTop.toString()];
+            let text = '';
+            if (AppState.noteNameDisplayMode === 'en') {
+                text = noteInfo.en;
+            } else {
+                text = noteInfo.th;
+                if (accElement.style.display !== 'none') text += accElement.textContent;
+            }
+            noteNameElement.textContent = text;
+            noteNameElement.style.top = `${noteTop + 35}px`;
+        }
+        
+        function togglePositions(button, positions) {
+            stopAllNotes(); 
+            document.querySelectorAll('.button-group button').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            AppState.selectedPositions = positions;
+            AppState.currentPositions = positions;
+            
+            startPlayAlongSequence(positions);
+        }
+
+        function handleRandomClick() {
+            stopAllNotes(); 
+            startPlayAlongSequence(AppState.currentPositions);
+        }
+
+        function updateLedgerLineForNote(index) {
+            const notePosition = document.getElementById(`note-position-${index}`);
+            const ledgerLine = notePosition.querySelector('.ledger-line');
+            const noteTop = AppState.currentNoteTops[index];
+            if (noteTop === 110 || noteTop === -10) {
+                ledgerLine.style.top = `${noteTop + 10}px`; 
+                ledgerLine.style.display = 'block';
+            } else {
+                ledgerLine.style.display = 'none';
+            }
+        }
+        
+        function toggleAccidentalsMode() {
+            AppState.isAccidentalMode = !AppState.isAccidentalMode;
+            const button = document.getElementById('toggleAccidentalsButton');
+            button.innerHTML = AppState.isAccidentalMode ? '♮ ปิดสุ่มเครื่องหมาย' : '♯ สุ่มเครื่องหมาย';
+            
+            if (AppState.currentPositions.length > 0) {
+                stopAllNotes();
+                startPlayAlongSequence(AppState.currentPositions);
+            }
+        }
+
+        function updateAccidentalForNote(index, forcedAccidental = 'random') {
+            const notePosition = document.getElementById(`note-position-${index}`);
+            const accElement = notePosition.querySelector('.accidental');
+            const noteElement = notePosition.querySelector('.whole-note');
+            const noteTop = AppState.currentNoteTops[index];
+
+            if (notePosition.style.display === 'none' || noteTop === null) {
+                accElement.style.display = 'none';
+                return;
+            }
+
+            let symbolToDisplay = null;
+            if (forcedAccidental !== 'random') {
+                symbolToDisplay = forcedAccidental;
+            } else if (AppState.isAccidentalMode && Math.random() < 0.5) {
+                const noteName = noteData[noteTop.toString()].en;
+                const randomSymbol = ACCIDENTAL_SYMBOLS[Math.floor(Math.random() * ACCIDENTAL_SYMBOLS.length)];
+
+                if (randomSymbol === '♯' && (noteName === 'E' || noteName === 'B')) {
+                    symbolToDisplay = null;
+                } else if (randomSymbol === '♭' && (noteName === 'F' || noteName === 'C')) {
+                    symbolToDisplay = null;
+                } else {
+                    symbolToDisplay = randomSymbol;
+                }
+            }
+
+            if (symbolToDisplay) {
+                accElement.textContent = symbolToDisplay;
+                let verticalOffset = (symbolToDisplay === '♯') ? -10 : -20;
+                accElement.style.top = `${parseInt(noteElement.style.top) + verticalOffset}px`;
+                accElement.style.display = 'block';
+            } else {
+                accElement.style.display = 'none';
+            }
+        }
+
+        function createButtonGroupButtons() {
+            const container = document.getElementById('button-group-container');
+            container.innerHTML = '';
+            buttonGroupData.forEach((data) => {
+                const button = document.createElement('button');
+                button.textContent = AppState.noteNameDisplayMode === 'th' ? data.th_short : data.en;
+                button.onclick = () => togglePositions(button, data.positions);
+                container.appendChild(button);
+            });
+        }
+
+        function updateButtonGroupLabels() {
+            const buttons = document.querySelectorAll('.button-group button');
+            buttons.forEach((button, index) => {
+                const data = buttonGroupData[index];
+                button.textContent = (AppState.noteNameDisplayMode === 'th') ? data.th_short : data.en;
+            });
+        }
+        
+        function createNoteElements() {
+            const staffContent = document.querySelector('.staff-content');
+            for(let i = 0; i < 9; i++) { // เพิ่มลูปเป็น 9 ตัวโน้ต
+                const notePosition = document.createElement('div');
+                notePosition.className = 'note-position';
+                notePosition.id = `note-position-${i}`;
+                notePosition.innerHTML = `
+                    <div class="accidental"></div>
+                    <img src="https://i.postimg.cc/sxQTb7PS/7.png" alt="Whole Note" class="whole-note">
+                    <div class="ledger-line"></div>
+                    <div class="note-name"></div>
+                `;
+                staffContent.appendChild(notePosition);
+            }
+        }
+
+        // =========================================================
+        // 5. METRONOME & CALL-RESPONSE LOGIC (เครื่องให้จังหวะและระบบสอน)
+        // =========================================================
+        let beatCount = 0;
+        let metronomeIntervalId;
+        const drumPatterns = {
+            popRock: [ { kick: true, hihat: true }, { hihat: true }, { snare: true, hihat: true }, { hihat: true }, { kick: true, hihat: true }, { hihat: true }, { snare: true, hihat: true }, { hihat: true } ],
+            funk: [ { kick: true, hihat: true }, { hihat: true }, { snare: true, hihat: true }, { kick: true, hihat: true }, { kick: true, hihat: true }, { hihat: true }, { snare: true, hihat: true }, { hihat: true } ],
+            disco: [ { kick: true, hihat: true }, { hihat: true }, { kick: true, hihat: true }, { hihat: true }, { kick: true, hihat: true }, { hihat: true }, { kick: true, hihat: true }, { hihat: true } ]
+        };
+        
+        function playKick() { const osc = audioContext.createOscillator(); const gain = audioContext.createGain(); osc.type = 'sine'; osc.frequency.setValueAtTime(120, audioContext.currentTime); osc.frequency.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.8); gain.gain.setValueAtTime(1, audioContext.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.8); osc.connect(gain); gain.connect(audioContext.destination); osc.start(audioContext.currentTime); osc.stop(audioContext.currentTime + 0.8); }
+        function playSnare() { const osc = audioContext.createOscillator(); const gain = audioContext.createGain(); osc.type = 'triangle'; osc.frequency.setValueAtTime(220, audioContext.currentTime); gain.gain.setValueAtTime(1, audioContext.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1); osc.connect(gain); gain.connect(audioContext.destination); osc.start(audioContext.currentTime); osc.stop(audioContext.currentTime + 0.1); const noise = audioContext.createBufferSource(); const bufferSize = audioContext.sampleRate; const buffer = audioContext.createBuffer(1, bufferSize, bufferSize); const output = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) { output[i] = Math.random() * 2 - 1; } noise.buffer = buffer; const noiseFilter = audioContext.createBiquadFilter(); noiseFilter.type = 'highpass'; noiseFilter.frequency.value = 1500; noise.connect(noiseFilter); const noiseEnvelope = audioContext.createGain(); noiseFilter.connect(noiseEnvelope); noiseEnvelope.connect(audioContext.destination); noiseEnvelope.gain.setValueAtTime(0.5, audioContext.currentTime); noiseEnvelope.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15); noise.start(audioContext.currentTime); noise.stop(audioContext.currentTime + 0.15); }
+        function playHiHat() { const noise = audioContext.createBufferSource(); const bufferSize = audioContext.sampleRate; const buffer = audioContext.createBuffer(1, bufferSize, bufferSize); const output = buffer.getChannelData(0); for (let i = 0; i < bufferSize; i++) { output[i] = Math.random() * 2 - 1; } noise.buffer = buffer; const bandpass = audioContext.createBiquadFilter(); bandpass.type = 'bandpass'; bandpass.frequency.value = 12000; const highpass = audioContext.createBiquadFilter(); highpass.type = "highpass"; highpass.frequency.value = 8000; noise.connect(bandpass); bandpass.connect(highpass); const noiseEnvelope = audioContext.createGain(); highpass.connect(noiseEnvelope); noiseEnvelope.connect(audioContext.destination); noiseEnvelope.gain.setValueAtTime(1, audioContext.currentTime); noiseEnvelope.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.03); noise.start(audioContext.currentTime); noise.stop(audioContext.currentTime + 0.03); }
+        function playClick() { const osc = audioContext.createOscillator(); const gain = audioContext.createGain(); osc.type = 'triangle'; osc.frequency.setValueAtTime(beatCount === 0 ? 1000 : 800, audioContext.currentTime); gain.gain.setValueAtTime(1, audioContext.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.05); osc.connect(gain); gain.connect(audioContext.destination); osc.start(audioContext.currentTime); osc.stop(audioContext.currentTime + 0.05); }
+
+        function playMetronomeBeat() {
+            if (AppState.metronomeMode === 'click' || AppState.metronomeMode === 'callResponse') { 
+                playClick(); 
+                if (AppState.metronomeMode === 'callResponse') handleCallResponseTick(); // เรียกทำงาน State Machine โหมดใหม่
+                beatCount = (beatCount + 1) % 4; 
+            }
+            else { const pattern = drumPatterns[AppState.metronomeMode]; const step = pattern[beatCount]; if (step.kick) playKick(); if (step.snare) playSnare(); if (step.hihat) playHiHat(); beatCount = (beatCount + 1) % pattern.length; }
+        }
+
+        // === หัวใจหลักของโหมด "ฟัง-อ่าน-ร้อง" ===
+        function handleCallResponseTick() {
+            const beatDuration = 60000 / document.getElementById('tempo').value;
+            const notes = document.querySelectorAll('.whole-note');
+            const feedbackEl = document.getElementById('pitch-feedback');
+
+            // ล้างสีไฮไลต์ทั้งหมดก่อน
+            notes.forEach(n => {
+                n.classList.remove('current-note');
+                n.classList.remove('response-note');
+            });
+            AppState.CR.activeTargetNote = null; // เคลียร์เป้าหมายการประเมินเสียงร้อง
+
+            // แสดงกล่องแจ้งเตือนเสมอเมื่ออยู่ในโหมดนี้
+            feedbackEl.classList.add('active');
+
+            if (AppState.CR.phase === 'countIn') {
+                feedbackEl.className = 'pitch-feedback-container active feedback-info';
+                feedbackEl.innerHTML = `⏳ เตรียมตัว... จังหวะที่ ${AppState.CR.tick + 1}`;
+
+                AppState.CR.tick++;
+                if (AppState.CR.tick >= 4) {
+                    AppState.CR.phase = 'call';
+                    AppState.CR.tick = 0;
+                    AppState.CR.currentSet = 0;
+                }
+            } else if (AppState.CR.phase === 'call') {
+                // คอมพิวเตอร์ใบ้เสียง (Call)
+                feedbackEl.className = 'pitch-feedback-container active feedback-guide';
+                feedbackEl.innerHTML = `🎧 ฟังเสียง...`;
+
+                if (AppState.CR.tick < 3) {
+                    let noteIndex = (AppState.CR.currentSet * 3) + AppState.CR.tick;
+                    let targetNote = AppState.sequence[noteIndex].targetKey;
+                    
+                    notes[noteIndex].classList.add('current-note'); // เรืองแสงสีฟ้า
+                    
+                    initAudio();
+                    playNote(targetNote);
+                    // ตัดเสียงให้สั้นกว่า 1 จังหวะเล็กน้อย (80%) เพื่อให้เสียงโน้ตแยกออกจากกันชัดเจน
+                    setTimeout(() => stopNote(targetNote), beatDuration * 0.8); 
+                } else {
+                    // จังหวะที่ 4 - จังหวะพัก (Rest)
+                    feedbackEl.innerHTML = `💨 หายใจเตรียมตัว!`;
+                }
+
+                AppState.CR.tick++;
+                if (AppState.CR.tick >= 4) {
+                    AppState.CR.phase = 'response';
+                    AppState.CR.tick = 0;
+                }
+            } else if (AppState.CR.phase === 'response') {
+                // ตานักเรียนร้อง (Response)
+                let noteIndex = (AppState.CR.currentSet * 3) + AppState.CR.tick;
+                
+                if (AppState.CR.tick < 3) {
+                    notes[noteIndex].classList.add('current-note');
+                    notes[noteIndex].classList.add('response-note'); // เรืองแสงสีม่วงบอกว่า "ตาเธอแล้ว"
+                    
+                    // ป้อนข้อมูลให้ระบบตรวจ Pitch รู้ว่าต้องเทียบกับคีย์อะไร
+                    AppState.CR.activeTargetNote = AppState.sequence[noteIndex].targetKey;
+
+                    if (!AppState.micActive) {
+                        feedbackEl.className = 'pitch-feedback-container active feedback-neutral';
+                        feedbackEl.innerHTML = `🎤 ร้องเลย!`;
+                    }
+                } else {
+                    // จังหวะที่ 4 
+                    if (!AppState.micActive) {
+                        feedbackEl.className = 'pitch-feedback-container active feedback-neutral';
+                        feedbackEl.innerHTML = `👏 เยี่ยมมาก!`;
+                    }
+                }
+
+                AppState.CR.tick++;
+                if (AppState.CR.tick >= 4) {
+                    AppState.CR.currentSet++;
+                    AppState.CR.tick = 0;
+                    if (AppState.CR.currentSet >= 3) {
+                        // จบ 3 ชุด (9 ตัว) -> ล้างกระดาน สุ่มชุดใหม่ เริ่มลูปทันที (ไม่รอ waitBeforeStart)
+                        startPlayAlongSequence(AppState.currentPositions, false, true); // waitBeforeStart = false, isCR = true
+                        AppState.CR.phase = 'call'; // ข้าม Count-in ไปลุยเลย
+                        AppState.CR.currentSet = 0;
+                    } else {
+                        // ไปชุดถัดไป (ตัวที่ 4-6 หรือ 7-9)
+                        AppState.CR.phase = 'call';
+                    }
+                }
+            }
+        }
+
+        function setupMetronome() {
+            const tempoInput = document.getElementById('tempo');
+            const tempoValue = document.getElementById('tempo-value');
+            const startStopButton = document.getElementById('start-stop');
+            const beatButtons = document.querySelectorAll('.beat-btn');
+
+            // เปลี่ยนให้เป็น Global หรือเชื่อมให้เข้าถึงง่ายเพื่อเรียกใช้จากปุ่ม Ready
+            window.startMetronomeEngine = function() {
+                const tempo = 60000 / tempoInput.value;
+                const subdivision = (AppState.metronomeMode === 'click' || AppState.metronomeMode === 'callResponse') ? 1 : 2;
+                beatCount = 0;
+                if (metronomeIntervalId) clearInterval(metronomeIntervalId);
+                metronomeIntervalId = setInterval(playMetronomeBeat, tempo / subdivision);
+            };
+
+            tempoInput.addEventListener('input', function() {
+                tempoValue.textContent = this.value;
+                if (AppState.metronomeRunning && !AppState.metronomePausedForReady) { 
+                    clearInterval(metronomeIntervalId); 
+                    window.startMetronomeEngine(); 
+                }
+            });
+
+            const openBtn = document.getElementById('openMetronomeBtn');
+            startStopButton.addEventListener('click', function() {
+                initAudio();
+                if (!AppState.metronomeRunning) {
+                    AppState.metronomeRunning = true;
+                    
+                    // ปิดหน้าต่าง Popup ทันทีที่กดปุ่มเริ่ม
+                    document.getElementById('metronomeModal').classList.remove('show');
+                    
+                    if (AppState.metronomeMode === 'callResponse') {
+                        // รีเซ็ตลูปโหมด "ฟัง-อ่าน-ร้อง"
+                        AppState.CR.phase = 'countIn';
+                        AppState.CR.tick = 0;
+                        AppState.CR.currentSet = 0;
+                        AppState.CR.activeTargetNote = null;
+                        
+                        // ปิดเปียโน เคลียร์ปุ่มต่างๆ ให้หน้าจอสะอาด
+                        document.querySelector('.piano-container').classList.add('hidden');
+                        document.getElementById('togglePianoButton').innerHTML = '🎹 แสดงเปียโน';
+                        document.getElementById('toggleMicButton').classList.remove('hidden-btn');
+                        
+                        // หยุดรอปุ่ม "กดเมื่อพร้อม" 
+                        AppState.metronomePausedForReady = true;
+                        startPlayAlongSequence(AppState.currentPositions, true, true); 
+                    } else {
+                        // เมโทรนอมโหมดปกติ เริ่มทันที
+                        AppState.metronomePausedForReady = false;
+                        window.startMetronomeEngine();
+                    }
+                    
+                    this.textContent = 'หยุดจังหวะ';
+                    this.style.background = 'linear-gradient(135deg, #718096, #4a5568)';
+                    openBtn.classList.add('metronome-active-pulse');
+                    openBtn.innerHTML = '⏱️ เมโทรนอม (กำลังทำงาน)';
+                } else {
+                    AppState.metronomeRunning = false;
+                    AppState.metronomePausedForReady = false;
+                    clearInterval(metronomeIntervalId);
+                    this.textContent = 'เริ่มจังหวะ';
+                    this.style.background = 'linear-gradient(135deg, #f56565, #e53e3e)';
+                    openBtn.classList.remove('metronome-active-pulse');
+                    openBtn.innerHTML = '⏱️ ตั้งค่าจังหวะ';
+
+                    if (AppState.metronomeMode === 'callResponse') {
+                        document.querySelectorAll('.whole-note').forEach(n => {
+                            n.classList.remove('current-note');
+                            n.classList.remove('response-note');
+                        });
+                        resetFeedbackUI();
+                    }
+                }
+            });
+            
+            beatButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    beatButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+                    AppState.metronomeMode = button.dataset.beat;
+                    if (AppState.metronomeRunning && !AppState.metronomePausedForReady) { 
+                        clearInterval(metronomeIntervalId); 
+                        window.startMetronomeEngine(); 
+                    }
+                });
+            });
+        }
+
+        // --- Piano Setup ---
+        function setupPiano() {
+            const keys = document.querySelectorAll('.piano .key');
+            keys.forEach(key => {
+                const note = key.dataset.note;
+
+                const startEventHandler = (e) => {
+                    if (e.type === 'touchstart') e.preventDefault();
+                    
+                    // ป้องกันนักเรียนกดเปียโนเล่นในโหมด "ฟัง-อ่าน-ร้อง"
+                    if (AppState.metronomeRunning && AppState.metronomeMode === 'callResponse') return;
+
+                    initAudio();
+                    playNote(note);
+                    key.classList.add('active');
+                    if (AppState.gameMode === 'playAlong') {
+                        checkPlayerInput(note);
+                    }
+                };
+
+                const endEventHandler = () => {
+                    stopNote(note);
+                    key.classList.remove('active');
+                };
+
+                key.addEventListener('mousedown', startEventHandler);
+                key.addEventListener('mouseup', endEventHandler);
+                key.addEventListener('mouseleave', endEventHandler);
+                
+                key.addEventListener('touchstart', startEventHandler, {passive: false});
+                key.addEventListener('touchend', endEventHandler);
+                key.addEventListener('touchcancel', endEventHandler); 
+            });
+        }
+
+        function updatePianoKeyLabels() {
+            const keys = document.querySelectorAll('.piano .key');
+            keys.forEach(key => {
+                const note = key.dataset.note;
+                const label = key.querySelector('.key-label');
+                if (!label) return;
+
+                if (AppState.noteNameDisplayMode === 'hidden') {
+                    label.innerHTML = '';
+                    return;
+                }
+                if (AppState.noteNameDisplayMode === 'th') {
+                    const thaiName = pianoKeyThaiNames[note];
+                    if (Array.isArray(thaiName)) {
+                        label.innerHTML = `${thaiName[0]}<br>${thaiName[1]}`;
+                    } else {
+                        label.textContent = thaiName;
+                    }
+                } else { 
+                    if (key.classList.contains('black')) {
+                        const names = enharmonicNames[note];
+                        if (names) { label.innerHTML = `${names[0]}<br>${names[1]}`; }
+                    } else {
+                        label.textContent = note.replace(/[0-9]/g, '');
+                    }
+                }
+            });
+        }
+
+        // --- Game Flow Methods ---
+        function togglePianoMode() {
+            const pianoContainer = document.querySelector('.piano-container');
+            if (pianoContainer.classList.contains('hidden')) {
+                showPianoMode();
+            } else {
+                const modal = document.getElementById('modeSelectModal');
+                modal.classList.add('show');
+            }
+        }
+
+        // ==========================================
+        // 🚨 จัดการโหมดฝึกร้องปกติ
+        // ==========================================
+        function prepareVocalMode() {
+            // ปิดป๊อปอัปที่ 1
+            document.getElementById('modeSelectModal').classList.remove('show');
+            AppState.gameMode = 'vocalPractice';
+            
+            // เตรียมหน้าจอ
+            document.querySelector('.piano-container').classList.add('hidden');
+            document.getElementById('togglePianoButton').innerHTML = '🎹 แสดงเปียโน';
+            
+            document.getElementById('toggleMicButton').classList.remove('hidden-btn');
+            document.getElementById('replayToneButton').classList.remove('hidden-btn');
+            document.getElementById('nextNoteButton').classList.remove('hidden-btn');
+            
+            // สุ่มโน้ตมาแสดง แต่สั่งให้ "รอก่อน" (true) อย่าเพิ่งเล่นเสียง/ไฮไลต์
+            startPlayAlongSequence(AppState.currentPositions, true, false); 
+        }
+
+        // ==========================================
+        // 🚨 เริ่มจริงจัง เมื่อนักเรียนกด "กดเมื่อพร้อม"
+        // ==========================================
+        function startVocalSession() {
+            document.getElementById('readyCheckModal').classList.remove('show');
+            
+            // ถ้ามาจากการกดเริ่มในโหมดฟัง-อ่าน-ร้อง ให้เรียกเมโทรนอม
+            if (AppState.metronomeMode === 'callResponse' && AppState.metronomePausedForReady) {
+                AppState.metronomePausedForReady = false;
+                if (window.startMetronomeEngine) window.startMetronomeEngine();
+                document.getElementById('pitch-feedback').classList.add('active'); // บังคับให้กล่องแจ้งเตือนไมค์ทำงาน
+                return;
+            }
+
+            // เริ่มลุย! (สำหรับโหมดซ้อมร้องปกติ)
+            highlightCurrentNote();
+            AppState.correctFrames = 0;
+            resetFeedbackUI();
+            playCurrentGuideTone();
+        }
+
+        function selectReadMode() {
+            document.getElementById('modeSelectModal').classList.remove('show');
+            AppState.gameMode = 'readPractice'; 
+            
+            document.querySelector('.piano-container').classList.add('hidden');
+            document.getElementById('togglePianoButton').innerHTML = '🎹 แสดงเปียโน';
+            
+            document.getElementById('toggleMicButton').classList.add('hidden-btn');
+            document.getElementById('replayToneButton').classList.add('hidden-btn');
+            document.getElementById('nextNoteButton').classList.add('hidden-btn');
+            
+            startPlayAlongSequence(AppState.currentPositions); 
+        }
+
+        function showPianoMode() {
+            AppState.gameMode = 'playAlong';
+            document.querySelector('.piano-container').classList.remove('hidden');
+            document.getElementById('togglePianoButton').innerHTML = '🎹 ซ่อนเปียโน';
+            
+            document.getElementById('toggleMicButton').classList.add('hidden-btn');
+            document.getElementById('replayToneButton').classList.add('hidden-btn');
+            document.getElementById('nextNoteButton').classList.add('hidden-btn');
+            
+            if (AppState.micActive) toggleMic(); 
+            
+            startPlayAlongSequence(AppState.currentPositions); 
+        }
+
+        function resetFeedbackUI() {
+            const feedbackEl = document.getElementById('pitch-feedback');
+            
+            if (AppState.metronomeRunning && AppState.metronomeMode === 'callResponse') {
+                return;
+            }
+
+            if (AppState.micActive && !AppState.guideTonePlaying) {
+                feedbackEl.innerHTML = `🎤 รอฟังเสียง...`;
+                feedbackEl.className = 'pitch-feedback-container active feedback-neutral';
+            } else if (!AppState.micActive) {
+                feedbackEl.classList.remove('active');
+            }
+        }
+
+        function playCurrentGuideTone() {
+            if (AppState.currentStep < AppState.sequence.length && AppState.gameMode === 'vocalPractice') {
+                stopAllNotes(); 
+                initAudio();
+                
+                const note = AppState.sequence[AppState.currentStep].targetKey;
+                playNote(note);
+                
+                AppState.guideTonePlaying = true; 
+                if (AppState.micActive) {
+                    const feedbackEl = document.getElementById('pitch-feedback');
+                    feedbackEl.innerHTML = `🎧 กำลังเล่นเสียงไกด์...`;
+                    feedbackEl.className = 'pitch-feedback-container active feedback-guide';
+                }
+                
+                const noteElements = document.querySelectorAll('.whole-note');
+                const currentElement = noteElements[AppState.currentStep];
+                currentElement.style.transform = 'scale(1.3)';
+                
+                setTimeout(() => {
+                    stopNote(note); 
+                    currentElement.style.transform = '';
+                    
+                    setTimeout(() => {
+                        AppState.guideTonePlaying = false; 
+                        resetFeedbackUI(); 
+                    }, 200); 
+                    
+                }, 1000);
+            }
+        }
+
+        function startPlayAlongSequence(positions, waitBeforeStart = false, isCR = false) {
+            stopAllNotes(); 
+            AppState.sequence = [];
+            for (let i = 0; i < 9; i++) { // สร้าง 9 ตัวโน้ต
+                const randomPos = positions[Math.floor(Math.random() * positions.length)];
+                const noteName = noteData[randomPos.toString()].en;
+                let accidental = null;
+                let targetKey = positionToNoteMap[randomPos.toString()];
+
+                if (AppState.isAccidentalMode && Math.random() < 0.5) {
+                    const randomSymbol = ACCIDENTAL_SYMBOLS[Math.floor(Math.random() * ACCIDENTAL_SYMBOLS.length)];
+                    if (randomSymbol === '♯' && noteName !== 'E' && noteName !== 'B') {
+                        accidental = '♯';
+                    } else if (randomSymbol === '♭' && noteName !== 'F' && noteName !== 'C') {
+                        accidental = '♭';
+                    }
+                }
+                
+                if (accidental) {
+                    const naturalNoteIndex = chromaticScale.indexOf(targetKey);
+                    if (accidental === '♯' && naturalNoteIndex + 1 < chromaticScale.length) {
+                        targetKey = chromaticScale[naturalNoteIndex + 1];
+                    } else if (accidental === '♭' && naturalNoteIndex - 1 >= 0) {
+                        targetKey = chromaticScale[naturalNoteIndex - 1];
+                    }
+                }
+                AppState.sequence.push({ position: randomPos, accidental: accidental, targetKey: targetKey });
+            }
+            
+            AppState.currentStep = 0;
+            displaySequenceNotes();
+
+            // ==========================================
+            // เช็คว่าต้อง "รอพร้อม" หรือให้ "เริ่มเลย"
+            // ==========================================
+            if (waitBeforeStart) {
+                // เคลียร์การไฮไลต์ก่อน
+                document.querySelectorAll('.whole-note').forEach(note => note.classList.remove('current-note'));
+                // เด้งป๊อปอัปให้เด็กกดพร้อม
+                document.getElementById('readyCheckModal').classList.add('show');
+            } else {
+                // ถ้าสุ่มลูปถัดไป ให้เริ่มปกติได้เลย
+                if (!isCR) {
+                    highlightCurrentNote();
+                    if (AppState.gameMode === 'vocalPractice') {
+                        AppState.correctFrames = 0;
+                        resetFeedbackUI();
+                        playCurrentGuideTone(); 
+                    }
+                }
+            }
+        }
+
+        function displaySequenceNotes() {
+            const notes = document.getElementsByClassName('whole-note');
+            for (let i = 0; i < notes.length; i++) {
+                const sequenceItem = AppState.sequence[i];
+                const noteTop = sequenceItem.position;
+                AppState.currentNoteTops[i] = noteTop;
+                notes[i].style.top = `${noteTop}px`;
+                notes[i].parentElement.style.display = 'flex';
+                notes[i].classList.remove('correct-pitch');
+                notes[i].classList.remove('response-note');
+                updateAccidentalForNote(i, sequenceItem.accidental);
+                updateNoteNameForNote(i);
+                updateLedgerLineForNote(i);
+            }
+        }
+
+        function highlightCurrentNote() {
+            document.querySelectorAll('.whole-note').forEach(note => note.classList.remove('current-note'));
+            
+            // ในโหมด Call & Response ไม่ต้องไฮไลต์ด้วยฟังก์ชันนี้ ให้ Handle Loop จัดการเอง
+            if (AppState.metronomeRunning && AppState.metronomeMode === 'callResponse') return;
+
+            if (AppState.currentStep < AppState.sequence.length) {
+                const noteElement = document.querySelectorAll('.whole-note')[AppState.currentStep];
+                noteElement.classList.add('current-note');
+            }
+        }
+
+        function advanceSequence() {
+            stopAllNotes(); 
+
+            // ยกเลิกฟังก์ชันนี้ทันที หากอยู่ในโหมด Call & Response เพราะเมโทรนอมจะเลื่อนข้ออัตโนมัติ
+            if (AppState.metronomeRunning && AppState.metronomeMode === 'callResponse') return;
+
+            if (AppState.gameMode === 'vocalPractice' && AppState.currentStep < AppState.sequence.length) {
+                const currentElement = document.querySelectorAll('.whole-note')[AppState.currentStep];
+                currentElement.classList.add('correct-pitch');
+            }
+
+            AppState.currentStep++;
+            
+            if (AppState.currentStep >= AppState.sequence.length) {
+                // เมื่อจบ 9 ตัวในโหมดปกติ จะขึ้นกระดานใหม่ทันที (waitBeforeStart เป็น false)
+                setTimeout(() => startPlayAlongSequence(AppState.currentPositions), 600);
+            } else {
+                highlightCurrentNote();
+                if (AppState.gameMode === 'vocalPractice') {
+                    AppState.correctFrames = 0;
+                    resetFeedbackUI();
+                    setTimeout(() => playCurrentGuideTone(), 200); 
+                }
+            }
+        }
+
+        function checkPlayerInput(pressedNote) {
+            if (AppState.metronomeRunning && AppState.metronomeMode === 'callResponse') return;
+            if (AppState.currentStep >= AppState.sequence.length) return;
+            const correctNote = AppState.sequence[AppState.currentStep].targetKey;
+            if (pressedNote === correctNote) {
+                advanceSequence();
+            }
+        }
+        
+        function clearPlayAlongState() {
+            AppState.sequence = [];
+            AppState.currentStep = 0;
+            document.querySelectorAll('.whole-note').forEach(note => {
+                note.classList.remove('current-note');
+                note.classList.remove('correct-pitch');
+                note.classList.remove('response-note');
+            });
+        }
+
+        function setCopyright() {
+            const year = new Date().getFullYear();
+            const copyrightElement = document.getElementById('copyright-notice');
+            if (copyrightElement) {
+                copyrightElement.textContent = `© ${year} ว่าที่ร้อยตรีมติพัฒน์ เชิดสุข. สงวนลิขสิทธิ์.`;
+            }
+        }
+
+        function addPianoKeyLabels() {
+            const keys = document.querySelectorAll('.piano .key');
+            keys.forEach(key => {
+                const label = document.createElement('span');
+                label.className = 'key-label';
+                key.appendChild(label);
+            });
+            updatePianoKeyLabels();
+        }
+
+        function setupModals() {
+            const modal = document.getElementById('metronomeModal');
+            const openBtn = document.getElementById('openMetronomeBtn');
+            const closeBtn = document.getElementById('closeMetronomeBtn');
+            openBtn.addEventListener('click', () => modal.classList.add('show'));
+            closeBtn.addEventListener('click', () => modal.classList.remove('show'));
+            modal.addEventListener('click', (e) => { 
+                if(e.target === modal && modal.id === 'metronomeModal') modal.classList.remove('show'); 
+            });
+        }
+
+        window.onload = function() {
+            createNoteElements();
+            createButtonGroupButtons();
+            startPlayAlongSequence(AppState.currentPositions); 
+            setupMetronome();
+            setupPiano();
+            addPianoKeyLabels();
+            setupModals();
+            document.getElementById('togglePianoButton').addEventListener('click', togglePianoMode);
+            setCopyright();
+        };
+    </script>
+</body>
+</html>
