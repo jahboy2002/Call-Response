@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ฝึกอ่านโน้ตดนตรีสากล (Call & Response + Gamified)</title>
+    <title>ฝึกอ่านโน้ตดนตรีสากล (Standardized Assessment)</title>
     <style>
         /* === โทนสีและฟอนต์ (Modern Palette) === */
         :root {
@@ -39,149 +39,49 @@
             overflow-x: hidden;
         }
 
-        .game-wrapper {
-            max-width: 1000px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
+        .game-wrapper { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
 
         /* === Card Containers === */
-        .card {
-            background-color: var(--card-bg);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-soft);
-            padding: 30px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
+        .card { background-color: var(--card-bg); border-radius: var(--radius-lg); box-shadow: var(--shadow-soft); padding: 30px; transition: transform 0.3s ease, box-shadow 0.3s ease; }
 
         /* === Staff Styles (บรรทัดห้าเส้น) === */
-        .container {
-            position: relative;
-            width: 100%;
-            padding-top: 50px; /* เผื่อพื้นที่ HUD */
-            padding-bottom: 20px;
-            overflow: hidden;
-            box-sizing: border-box;
-        }
+        .container { position: relative; width: 100%; padding-top: 50px; padding-bottom: 20px; overflow: hidden; box-sizing: border-box; }
 
         /* === Game HUD (Scoreboard) === */
-        .score-hud {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            display: flex;
-            gap: 15px;
-            z-index: 30;
-            opacity: 0;
-            transform: translateY(-20px);
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: none;
-        }
-        .score-hud.active {
-            opacity: 1;
-            transform: translateY(0);
-        }
-        .hud-box {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 800;
-            font-size: 18px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            border: 2px solid #e2e8f0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .score-hud { position: absolute; top: 15px; right: 20px; display: flex; gap: 15px; z-index: 30; opacity: 0; transform: translateY(-20px); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); pointer-events: none; }
+        .score-hud.active { opacity: 1; transform: translateY(0); }
+        .hud-box { background: rgba(255, 255, 255, 0.95); padding: 8px 16px; border-radius: 20px; font-weight: 800; font-size: 18px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 2px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
         .hud-score { color: var(--primary); border-color: #bee3f8; }
-        .hud-combo { color: var(--secondary); border-color: #feebc8; }
-        .combo-shake { animation: shake 0.4s ease-in-out; }
-
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px) rotate(-3deg); }
-            75% { transform: translateX(5px) rotate(3deg); }
-        }
+        .hud-timer { color: #4a5568; border-color: #cbd5e0; }
+        .hud-acc { color: var(--success); border-color: #c6f6d5; }
 
         /* Floating Feedback Text */
-        .floating-text {
-            position: absolute;
-            font-weight: 900;
-            font-size: 24px;
-            pointer-events: none;
-            z-index: 100;
-            animation: floatUp 1s ease-out forwards;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 0 10px rgba(255,255,255,0.8);
-        }
+        .floating-text { position: absolute; font-weight: 900; font-size: 24px; pointer-events: none; z-index: 100; animation: floatUp 1s ease-out forwards; text-shadow: 0 2px 4px rgba(0,0,0,0.2), 0 0 10px rgba(255,255,255,0.8); }
         .float-perfect { color: var(--success); }
         .float-good { color: var(--primary); }
         .float-miss { color: var(--danger); font-size: 20px; }
-        
-        @keyframes floatUp {
-            0% { opacity: 0; transform: translateY(10px) scale(0.8); }
-            20% { opacity: 1; transform: translateY(-5px) scale(1.1); }
-            80% { opacity: 1; transform: translateY(-25px) scale(1); }
-            100% { opacity: 0; transform: translateY(-35px) scale(0.9); }
-        }
+        @keyframes floatUp { 0% { opacity: 0; transform: translateY(10px) scale(0.8); } 20% { opacity: 1; transform: translateY(-5px) scale(1.1); } 80% { opacity: 1; transform: translateY(-25px) scale(1); } 100% { opacity: 0; transform: translateY(-35px) scale(0.9); } }
 
         /* กล่องแจ้งผลสถานะเสียง (Pitch Feedback) */
-        .pitch-feedback-container {
-            position: absolute;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 20;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 8px 24px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 16px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-            display: none;
-            transition: all 0.3s ease;
-            text-align: center;
-            min-width: 200px;
-        }
+        .pitch-feedback-container { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); z-index: 20; background: rgba(255, 255, 255, 0.95); padding: 8px 24px; border-radius: 20px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); display: none; transition: all 0.3s ease; text-align: center; min-width: 200px; }
         .pitch-feedback-container.active { display: block; animation: bounceIn 0.4s ease; }
-        
         .feedback-neutral { color: var(--text-muted); border: 2px solid #e2e8f0; }
         .feedback-correct { color: var(--success); background: #f0fff4; border: 2px solid var(--success); transform: translateX(-50%) scale(1.05); }
         .feedback-high { color: var(--secondary); background: #fffaf0; border: 2px solid var(--secondary); }
         .feedback-low { color: var(--primary); background: #ebf8ff; border: 2px solid var(--primary); }
         .feedback-guide { color: var(--purple); background: #faf5ff; border: 2px solid var(--purple); }
         .feedback-info { color: #3182ce; background: #ebf8ff; border: 2px solid #3182ce; }
-
-        @keyframes bounceIn {
-            0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
-            100% { opacity: 1; transform: translateX(-50%) translateY(0); }
-        }
+        @keyframes bounceIn { 0% { opacity: 0; transform: translateX(-50%) translateY(-10px); } 100% { opacity: 1; transform: translateX(-50%) translateY(0); } }
 
         .staff-lines { position: absolute; width: calc(100% - 60px); height: 120px; top: 50px; left: 30px; }
         .custom-hr { border: none; border-top: 2px solid #2d3748; margin: 0; position: absolute; width: 100%; }
         .hr1 { top: 20px; } .hr2 { top: 40px; } .hr3 { top: 60px; } .hr4 { top: 80px; } .hr5 { top: 100px; }
 
-        .staff-content {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            position: relative;
-            padding-left: 90px;
-            padding-right: 30px;
-            z-index: 10;
-        }
-
+        .staff-content { display: flex; align-items: center; justify-content: space-between; position: relative; padding-left: 90px; padding-right: 30px; z-index: 10; }
         .g-clef { position: absolute; left: 10px; top: -35px; height: 190px; width: auto; }
 
         .note-position { position: relative; flex-grow: 1; height: 150px; display: flex; justify-content: center; align-items: center; }
-
-        .whole-note {
-            position: absolute;
-            width: 35px;
-            transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.2s, transform 0.2s;
-        }
-        
+        .whole-note { position: absolute; width: 35px; transition: top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.2s, transform 0.2s; }
         .whole-note.current-note { filter: drop-shadow(0 0 10px rgba(66, 153, 225, 0.8)); transform: scale(1.25); z-index: 5; }
         .whole-note.response-note { filter: drop-shadow(0 0 12px rgba(159, 122, 234, 0.9)) hue-rotate(240deg); transform: scale(1.3); z-index: 6; }
         .whole-note.correct-pitch { filter: drop-shadow(0 0 15px rgba(72, 187, 120, 1)) hue-rotate(90deg); transform: scale(1.3); transition: all 0.2s; }
@@ -190,14 +90,14 @@
         .ledger-line { position: absolute; border-top: 3px solid #2d3748; width: 55px; display: none; left: 50%; transform: translateX(-50%); border-radius: 2px; }
         .accidental { position: absolute; font-size: 38px; font-weight: normal; display: none; left: 50%; transform: translateX(-45px); color: var(--text-main); text-shadow: 1px 1px 0px #fff, -1px -1px 0px #fff, 1px -1px 0px #fff, -1px 1px 0px #fff; }
         .note-name { position: absolute; font-size: 15px; font-weight: bold; text-align: center; width: 45px; color: #e53e3e; background: rgba(255, 255, 255, 0.8); border-radius: 4px; padding: 2px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .note-name.hidden { display: none; }
+        .note-name.hidden { display: none !important; }
 
         /* === Controls & Buttons Styles === */
         .main-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-bottom: 20px; }
         .main-controls button { display: flex; align-items: center; gap: 8px; padding: 14px 24px; font-size: 16px; font-weight: 600; color: white; border: none; border-radius: 12px; cursor: pointer; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
         .main-controls button:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2); filter: brightness(1.05); }
         .main-controls button:active { transform: translateY(1px); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
-        .hidden-btn { display: none !important; }
+        .hidden-btn { display: none !important; } 
 
         #randomButton { background: linear-gradient(135deg, #4299e1, #3182ce); }
         #toggleNoteNamesButton { background: linear-gradient(135deg, #48bb78, #38a169); }
@@ -207,7 +107,7 @@
         #openMetronomeBtn { background: linear-gradient(135deg, #4a5568, #2d3748); }
         
         #startTestBtn { background: linear-gradient(135deg, #ecc94b, #d69e2e); color: #2d3748; font-weight: 800; font-size: 18px; border: 2px solid #fff; box-shadow: 0 6px 20px rgba(236, 201, 75, 0.4); animation: pulse-gold 2s infinite; }
-        #endTestBtn { background: linear-gradient(135deg, #e53e3e, #c53030); }
+        #endTestBtn { background: linear-gradient(135deg, #e53e3e, #c53030); margin: 0 auto; display: flex; }
 
         #toggleMicButton { background: linear-gradient(135deg, #e53e3e, #c53030); }
         #toggleMicButton.mic-active { background: linear-gradient(135deg, #f56565, #fc8181); animation: pulse-red 2s infinite; }
@@ -216,7 +116,6 @@
         
         @keyframes pulse-gold { 0% { box-shadow: 0 0 0 0 rgba(236, 201, 75, 0.7); } 70% { box-shadow: 0 0 0 12px rgba(236, 201, 75, 0); } 100% { box-shadow: 0 0 0 0 rgba(236, 201, 75, 0); } }
 
-        /* === Group Selection Buttons === */
         .group-selector-card { padding: 20px; }
         .control-group-title { width: 100%; text-align: center; font-weight: bold; color: var(--text-muted); margin-bottom: 15px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
         .button-group { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
@@ -224,14 +123,10 @@
         .button-group button:hover { border-color: #cbd5e0; background-color: #edf2f7; transform: translateY(-2px); }
         .button-group button.active { background-color: #ebf8ff; color: #3182ce; border-color: #63b3ed; box-shadow: 0 4px 10px rgba(66, 153, 225, 0.15); }
 
-        /* === Modals Styles === */
-        .metronome-card { text-align: center; background: linear-gradient(to bottom, #ffffff, #f7fafc); }
-        .metronome-card h2 { margin-top: 0; color: var(--text-main); font-size: 20px; margin-bottom: 20px; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(5px); display: flex; justify-content: center; align-items: center; z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
         .modal-overlay.show { opacity: 1; pointer-events: auto; }
-        .modal-content { position: relative; max-width: 450px; width: 90%; background: linear-gradient(to bottom, #ffffff, #f7fafc); border-radius: var(--radius-lg); padding: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.25); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-align: center; }
+        .modal-content { position: relative; max-width: 480px; width: 90%; background: linear-gradient(to bottom, #ffffff, #f7fafc); border-radius: var(--radius-lg); padding: 30px; box-shadow: 0 25px 50px rgba(0,0,0,0.25); transform: scale(0.9); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); text-align: center; max-height: 90vh; overflow-y: auto; }
         .modal-overlay.show .modal-content { transform: scale(1); }
-        
         .close-btn { position: absolute; top: 15px; right: 15px; font-size: 28px; background: none; border: none; cursor: pointer; color: var(--text-muted); transition: color 0.2s; line-height: 1; }
         .close-btn:hover { color: var(--text-main); }
         
@@ -249,23 +144,31 @@
         .beat-selector button { padding: 8px 16px; border: 1px solid #e2e8f0; background: white; border-radius: 20px; color: var(--text-muted); font-weight: 600; cursor: pointer; transition: all 0.2s ease; }
         .beat-selector button.active { background: var(--dark); color: white; border-color: var(--dark); }
         .beat-btn-cr { background: linear-gradient(135deg, #9f7aea, #805ad5) !important; color: white !important; border: none !important; }
-
         .controls label { display: block; margin-bottom: 10px; font-weight: bold; color: var(--text-main); }
         input[type="range"] { width: 80%; margin-bottom: 20px; accent-color: var(--primary); }
-
         #start-stop { background: linear-gradient(135deg, #f56565, #e53e3e); color: white; border: none; padding: 12px 40px; border-radius: 25px; font-size: 18px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 12px rgba(229, 62, 62, 0.3); transition: transform 0.2s, box-shadow 0.2s; }
         #start-stop:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(229, 62, 62, 0.4); }
 
-        /* Summary Dashboard CSS */
-        .summary-dashboard { display: flex; flex-direction: column; gap: 20px; }
-        .score-row { display: flex; justify-content: space-between; gap: 15px; }
-        .score-card { flex: 1; background: white; padding: 15px; border-radius: 16px; border: 2px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .score-card.current { border-color: var(--gold); background: #fffaf0; }
-        .score-title { font-size: 14px; font-weight: 600; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; }
-        .score-value { font-size: 32px; font-weight: 900; color: var(--text-main); }
-        .score-accuracy { font-size: 14px; color: var(--primary); font-weight: bold; }
+        /* Learning Analytics Dashboard CSS */
+        .summary-dashboard { display: flex; flex-direction: column; gap: 15px; }
+        .student-info-box { background: #f7fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; text-align: center; }
+        .student-info-box h3 { margin: 0 0 5px 0; font-size: 20px; color: var(--text-main); }
+        .student-info-box p { margin: 0; font-size: 14px; color: var(--text-muted); }
         
-        .comparison-badge { margin-top: 10px; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; display: inline-block; }
+        .score-row { display: flex; gap: 15px; flex-wrap: wrap; }
+        .score-card { flex: 1; background: white; padding: 15px; border-radius: 16px; border: 2px solid #e2e8f0; box-shadow: 0 4px 6px rgba(0,0,0,0.05); min-width: 120px; }
+        .score-card.main-score { border-color: var(--primary); background: #ebf8ff; flex: 2; }
+        .score-title { font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 5px; text-transform: uppercase; }
+        .score-value { font-size: 28px; font-weight: 900; color: var(--text-main); margin-bottom: 5px; }
+        .main-score .score-value { font-size: 42px; color: var(--primary); }
+        .score-unit { font-size: 14px; color: var(--text-muted); font-weight: normal; }
+
+        .feedback-message-box { padding: 15px; border-radius: 12px; font-weight: bold; font-size: 15px; text-align: center; line-height: 1.5; }
+        .feedback-excellent { background: #f0fff4; color: #2f855a; border: 1px solid #9ae6b4; }
+        .feedback-good { background: #fffaf0; color: #c05621; border: 1px solid #fbd38d; }
+        .feedback-needs-improvement { background: #fff5f5; color: #c53030; border: 1px solid #feb2b2; }
+
+        .comparison-badge { margin-top: 5px; padding: 6px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; display: inline-block; }
         .badge-up { background: #f0fff4; color: var(--success); border: 1px solid var(--success); }
         .badge-down { background: #fff5f5; color: var(--danger); border: 1px solid var(--danger); }
         .badge-new { background: #ebf8ff; color: var(--primary); border: 1px solid var(--primary); }
@@ -306,6 +209,7 @@
         @media (max-width: 768px) {
             .card { padding: 15px; } .staff-content { padding-left: 60px; padding-right: 10px; } .g-clef { height: 140px; left: 5px; top: -15px; } .whole-note { width: 28px; } .ledger-line { width: 45px; } .accidental { font-size: 30px; transform: translateX(-35px); } .piano { transform: scale(0.65); transform-origin: top center; margin-bottom: -30px; } .main-controls button { padding: 10px 16px; font-size: 14px; } .note-name { font-size: 12px; width: 35px; }
             .score-hud { top: 5px; right: 10px; gap: 8px; } .hud-box { padding: 6px 12px; font-size: 14px; }
+            .score-card { min-width: 45%; }
         }
         @media (max-width: 768px) and (orientation: portrait) { .landscape-warning { display: flex; } .staff-content, .score-hud { opacity: 0; pointer-events: none; } }
         @media (max-width: 500px) { .piano { transform: scale(0.48); margin-bottom: -60px;} }
@@ -319,9 +223,9 @@
         
         <!-- Game HUD Scoreboard -->
         <div id="score-hud" class="score-hud">
-            <div class="hud-box hud-score">⭐ <span id="hud-score-val">0</span></div>
-            <div class="hud-box hud-combo">🔥 x<span id="hud-combo-val">0</span></div>
-            <div class="hud-box hud-timer" id="hud-timer-box" style="display: none; color: #4a5568; border-color: #cbd5e0;">⏱️ <span id="hud-timer-val">00:00</span></div>
+            <div class="hud-box hud-score">💯 <span id="hud-score-val">0</span><span style="font-size:12px; color:#a0aec0; margin-left:2px;">/100</span></div>
+            <div class="hud-box hud-acc">🎯 <span id="hud-acc-val">0</span>%</div>
+            <div class="hud-box hud-timer" id="hud-timer-box" style="display: none;">⏱️ <span id="hud-timer-val">00:00</span></div>
         </div>
 
         <div id="pitch-feedback" class="pitch-feedback-container feedback-neutral">
@@ -358,7 +262,7 @@
             
             <!-- Controls for Normal Practice -->
             <div class="main-controls" id="practice-controls">
-                <button id="startTestBtn" onclick="openTestModal()">🏆 เริ่มทดสอบ</button>
+                <button id="startTestBtn" onclick="openStudentInfoModal()">🏆 เริ่มทดสอบ</button>
                 <button id="togglePianoButton">🎹 ซ่อนเปียโน</button>
                 
                 <button id="randomButton" onclick="handleRandomClick()">🎲 สุ่มโน้ตซ้อม</button>
@@ -386,7 +290,7 @@
 
     <footer class="site-footer card full-width">
         <p id="copyright-notice"></p>
-        <p>ออกแบบและพัฒนาสำหรับจัดกิจกรรม Active Learning ในชั้นเรียนดนตรี</p>
+        <p>เครื่องมือวัดและประเมินผลทักษะการอ่านโน้ตดนตรีสากล</p>
     </footer>
 
 </div>
@@ -404,7 +308,7 @@
     </div>
 </div>
 
-<!-- Modal 2: เตรียมตัวก่อนร้อง (ขึ้นมาดักก่อนเริ่มเล่นเสียง) -->
+<!-- Modal 2: เตรียมตัวก่อนร้อง -->
 <div id="readyCheckModal" class="modal-overlay">
     <div class="modal-content" style="padding: 40px 20px;">
         <h2 style="font-size: 24px; margin-bottom: 15px;">🎧 เตรียมตัวให้พร้อม</h2>
@@ -444,7 +348,11 @@
 <div id="studentInfoModal" class="modal-overlay">
     <div class="modal-content">
         <button class="close-btn" onclick="closeModal('studentInfoModal')">&times;</button>
-        <h2 style="margin-bottom: 20px;">📝 ข้อมูลผู้ทดสอบ</h2>
+        <h2 style="margin-bottom: 20px;">📝 ข้อมูลผู้เข้าสอบ</h2>
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;">กรุณากรอกข้อมูลให้ครบถ้วนเพื่อบันทึกผลการประเมิน</p>
+        
+        <p id="student-info-error" style="color: var(--danger); font-size: 14px; font-weight: bold; display: none; margin-bottom: 10px;">❌ กรุณากรอกข้อมูลทุกช่องครับ</p>
+
         <div style="text-align: left; margin-bottom: 15px;">
             <label style="display: block; margin-bottom: 5px; font-weight: bold; color: var(--text-main);">ชื่อ - นามสกุล:</label>
             <input type="text" id="studentName" placeholder="เช่น ด.ช.รักเรียน ขยันยิ่ง" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 16px; box-sizing: border-box;">
@@ -459,7 +367,7 @@
                 <input type="number" id="studentNumber" placeholder="เช่น 15" style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-family: inherit; font-size: 16px; box-sizing: border-box;">
             </div>
         </div>
-        <button class="mode-btn btn-read" onclick="submitStudentInfo()">ถัดไป ➡️</button>
+        <button class="mode-btn btn-read" onclick="submitStudentInfo()">ยืนยันข้อมูล ➡️</button>
     </div>
 </div>
 
@@ -467,29 +375,23 @@
 <div id="testSelectionModal" class="modal-overlay">
     <div class="modal-content">
         <h2>🏆 เลือกรูปแบบการทดสอบ</h2>
-        <p>ระบบจะสุ่มตัวโน้ต <strong style="color:var(--primary)">9 ข้อ</strong> ตามระดับที่คุณเลือกไว้<br>เพื่อประเมินผลและเก็บคะแนนเปรียบเทียบ</p>
-        <div style="display: flex; flex-direction: column;">
-            <button class="mode-btn btn-piano" onclick="startTestSession('piano')">🎹 โหมดสอบกดเปียโน (เน้นความไว)</button>
-            <button class="mode-btn btn-vocal" onclick="startTestSession('vocal')">🎤 โหมดสอบร้องโน้ต (เน้นความแม่นยำ)</button>
+        <p>การสอบมี <strong>9 ข้อ (100 คะแนน)</strong><br><span style="color: var(--danger); font-size: 14px;">*ขณะสอบ ระบบจะบังคับซ่อนชื่อโน้ตเพื่อประเมินความสามารถจริง</span></p>
+        <div style="display: flex; flex-direction: column; margin-top: 20px;">
+            <button class="mode-btn btn-piano" onclick="startTestSession('piano')">🎹 โหมดสอบกดเปียโน (วัดความไวและแม่นยำ)</button>
+            <button class="mode-btn btn-vocal" onclick="startTestSession('vocal')">🎤 โหมดสอบร้องโน้ต (วัดความเสถียรของเสียง)</button>
         </div>
         <button onclick="closeModal('testSelectionModal')" style="margin-top: 10px; background: none; border: none; color: var(--text-muted); cursor: pointer; text-decoration: underline;">ยกเลิก</button>
     </div>
 </div>
 
-<!-- Modal 6: สรุปผลการทดสอบ (Summary Dashboard) -->
+<!-- Modal 6: สรุปผลการทดสอบเชิงวิชาการ (Learning Analytics Dashboard) -->
 <div id="summaryModal" class="modal-overlay">
-    <div class="modal-content">
-        <h2 id="summary-title" style="margin-bottom: 10px;">🎉 สรุปผลการทดสอบ</h2>
+    <div class="modal-content" style="max-width: 550px;">
+        <h2 id="summary-title" style="margin-bottom: 5px;">📊 รายงานผลการประเมิน</h2>
         
-        <!-- ข้อมูลนักเรียนและเวลา -->
-        <div style="background: #f7fafc; padding: 15px; border-radius: 12px; margin-bottom: 20px; border: 1px solid #e2e8f0; text-align: center;">
-            <div style="font-size: 18px; font-weight: bold; color: var(--text-main); margin-bottom: 5px;" id="summary-student-name">ชื่อ - นามสกุล</div>
-            <div style="font-size: 14px; color: var(--text-muted);">
-                ชั้น ม.<span id="summary-student-class">-</span> | เลขที่ <span id="summary-student-number">-</span>
-            </div>
-            <div style="margin-top: 10px; font-size: 16px; font-weight: bold; color: var(--primary);">
-                ⏱️ เวลาที่ใช้: <span id="summary-time-taken">00:00</span> นาที
-            </div>
+        <div class="student-info-box" style="margin-bottom: 15px;">
+            <h3 id="summary-student-name">ชื่อผู้สอบ</h3>
+            <p>ชั้น ม.<span id="summary-student-class">-</span> | เลขที่ <span id="summary-student-number">-</span> | เวลาที่ใช้สอบ: <strong id="summary-time-taken" style="color: var(--primary);">00:00</strong> นาที</p>
         </div>
 
         <div class="summary-dashboard">
@@ -501,21 +403,31 @@
                     <div class="score-accuracy" id="prev-acc">ความแม่นยำ: -%</div>
                 </div>
                 <!-- คะแนนครั้งล่าสุด -->
-                <div class="score-card current">
-                    <div class="score-title">ครั้งล่าสุด</div>
-                    <div class="score-value" id="curr-score">0</div>
-                    <div class="score-accuracy" id="curr-acc">ความแม่นยำ: 0%</div>
+                <div class="score-card main-score">
+                    <div class="score-title">คะแนนมาตรฐาน (Rubric)</div>
+                    <div class="score-value"><span id="curr-score">0</span><span class="score-unit"> / 100</span></div>
                     <div id="comparison-badge" class="comparison-badge badge-new">กำลังคำนวณ...</div>
                 </div>
             </div>
             
-            <div style="text-align: left; padding: 0 10px; color: var(--text-muted); font-size: 14px;">
-                🔥 คอมโบสูงสุดที่ทำได้: <strong style="color:var(--secondary)" id="summary-combo">0</strong> ต่อเนื่อง
+            <div class="score-row">
+                <div class="score-card">
+                    <div class="score-title">🎯 ความแม่นยำ (Accuracy)</div>
+                    <div class="score-value"><span id="curr-acc">0</span><span class="score-unit">%</span></div>
+                </div>
+                <div class="score-card">
+                    <div class="score-title">⚡ ความคล่องแคล่ว (Fluency)</div>
+                    <div class="score-value"><span id="curr-fluency">0.0</span><span class="score-unit"> วิ/ข้อ</span></div>
+                </div>
+            </div>
+
+            <div id="feedback-message-box" class="feedback-message-box">
+                <!-- ข้อความประเมินผลจะแสดงที่นี่ -->
             </div>
 
             <div class="action-buttons">
-                <button class="action-btn btn-back" onclick="backToPractice()">⬅️ กลับไปหน้าซ้อม</button>
-                <button class="action-btn btn-retry" onclick="retryTest()">🔄 สอบแก้ตัว</button>
+                <button class="action-btn btn-back" onclick="backToPractice()">⬅️ สิ้นสุดการสอบ</button>
+                <button class="action-btn btn-retry" onclick="retryTest()">🔄 สอบแก้ตัวโหมดเดิม</button>
             </div>
         </div>
     </div>
@@ -526,13 +438,13 @@
         // 1. STATE MANAGEMENT (จัดการข้อมูลส่วนกลาง)
         // =========================================================
         const AppState = {
-            gameMode: 'playAlong', // 'playAlong', 'vocalPractice', 'readPractice'
+            gameMode: 'playAlong', 
             sequence: [],
             currentStep: 0,
             currentPositions: [-10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110],
             selectedPositions: [],
-            noteNameDisplayMode: 'en',
-            savedNoteNameDisplayMode: 'en', // เพิ่มตัวแปรสำหรับจำโหมดชื่อโน้ตก่อนเข้าสอบ
+            noteNameDisplayMode: 'en', // 'en', 'th', 'handSign', 'hidden'
+            savedNoteNameDisplayMode: 'en', 
             currentNoteTops: new Array(9).fill(null), 
             isAccidentalMode: false,
             
@@ -547,28 +459,20 @@
             metronomeMode: 'click',
             metronomeRunning: false,
             metronomePausedForReady: false, 
+            CR: { phase: 'countIn', tick: 0, currentSet: 0, activeTargetNote: null },
 
-            // Call & Response States (ฟัง-อ่าน-ร้อง)
-            CR: {
-                phase: 'countIn', // 'countIn', 'call', 'response'
-                tick: 0,
-                currentSet: 0,
-                activeTargetNote: null 
-            },
-
-            // === NEW: GAMIFICATION & TEST STATES ===
+            // === STANDARDIZED ASSESSMENT STATES ===
             isTestMode: false,
             testType: null, // 'piano' | 'vocal'
             student: { name: '', class: '', number: '' },
             timer: { startTime: null, intervalId: null, elapsedMs: 0 },
             testStats: {
-                score: 0,
-                combo: 0,
-                maxCombo: 0,
-                correctNotes: 0,
                 totalNotes: 9,
                 currentNoteStartTime: 0,
-                baseScore: 100
+                mistakesOnCurrentNote: 0,
+                noteScores: [], 
+                noteTimes: [],  
+                correctNoteCount: 0 
             },
             history: {
                 piano: null, // { score: number, accuracy: number }
@@ -580,6 +484,17 @@
 
         const noteData = {
             '-10': { en: 'A', th: 'ลา', th_short: 'ล' }, '0': { en: 'G', th: 'ซอล', th_short: 'ซ' }, '10': { en: 'F', th: 'ฟา', th_short: 'ฟ' }, '20': { en: 'E', th: 'มี', th_short: 'ม' }, '30': { en: 'D', th: 'เร', th_short: 'ร' }, '40': { en: 'C', th: 'โด', th_short: 'ด' }, '50': { en: 'B', th: 'ที', th_short: 'ท' }, '60': { en: 'A', th: 'ลา', th_short: 'ล' }, '70': { en: 'G', th: 'ซอล', th_short: 'ซ' }, '80': { en: 'F', th: 'ฟา', th_short: 'ฟ' }, '90': { en: 'E', th: 'มี', th_short: 'ม' }, '100': { en: 'D', th: 'เร', th_short: 'ร' }, '110': { en: 'C', th: 'โด', th_short: 'ด' }
+        };
+
+        // Data ภาษามือ (Hand Signs)
+        const handSignImages = {
+            'C': 'https://i.ibb.co/tTFBgmDs/image.png',
+            'D': 'https://i.ibb.co/cSd9DrjN/image.png',
+            'E': 'https://i.ibb.co/q3Fp5VGS/image.png',
+            'F': 'https://i.ibb.co/20zCGjCq/image.png',
+            'G': 'https://i.ibb.co/FLbgqXZg/image.png',
+            'A': 'https://i.ibb.co/60MC92h7/image.png',
+            'B': 'https://i.ibb.co/8L6v9MS0/image.png'
         };
 
         const positionToNoteMap = {
@@ -609,9 +524,6 @@
         };
         const activeOscillators = {};
 
-        // =========================================================
-        // 2. AUDIO SYSTEM & LIFECYCLE
-        // =========================================================
         function initAudio() {
             if (!audioContext) {
                 try { audioContext = new (window.AudioContext || window.webkitAudioContext)(); } 
@@ -663,20 +575,15 @@
             oscillator.connect(gainNode);
             gainNode.connect(audioContext.destination);
             
-            // Envelope แบบนุ่มนวล
             gainNode.gain.setValueAtTime(0.001, audioContext.currentTime);
             gainNode.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + 0.02);
             oscillator.start(audioContext.currentTime);
             activeOscillators[note] = { oscillator, gainNode };
         }
 
-        // =========================================================
-        // 3. PITCH DETECTION (ประเมินเสียงร้อง)
-        // =========================================================
         let mediaStreamSource = null;
         let analyser = null;
         let pitchIntervalId = null;
-        
         const correlationBuffer = new Float32Array(2048);
         const correlationArray = new Float32Array(2048);
 
@@ -737,7 +644,8 @@
                     startPitchDetectionLoop();
                     
                 } catch (err) {
-                    alert('กรุณาอนุญาตให้แอปเข้าถึงไมโครโฟนเพื่อใช้งานโหมดนี้ครับ');
+                    feedbackContainer.innerHTML = '❌ กรุณาอนุญาตเข้าถึงไมโครโฟน';
+                    feedbackContainer.className = 'pitch-feedback-container active feedback-low';
                     if (AppState.isTestMode && AppState.testType === 'vocal') abortTestSession();
                 }
             } else {
@@ -760,7 +668,6 @@
             function updatePitch() {
                 if (!AppState.micActive) return;
                 
-                // --- Call & Response Mode (Realtime Target) ---
                 if (AppState.metronomeMode === 'callResponse' && AppState.metronomeRunning && !AppState.isTestMode) {
                     if (AppState.CR.activeTargetNote) {
                         analyser.getFloatTimeDomainData(correlationBuffer);
@@ -773,26 +680,20 @@
                             let targetCentsFromA4 = 1200 * Math.log2(targetFreq / 440);
                             let diffCents = (centsFromA4 - targetCentsFromA4) % 1200;
                             
-                            if (diffCents > 600) diffCents -= 1200;
-                            else if (diffCents < -600) diffCents += 1200;
+                            if (diffCents > 600) diffCents -= 1200; else if (diffCents < -600) diffCents += 1200;
 
                             if (Math.abs(diffCents) <= AppState.toleranceCents) {
-                                feedbackEl.innerHTML = `✅ ดีมาก ตรงคีย์!`;
-                                feedbackEl.className = 'pitch-feedback-container active feedback-correct';
+                                feedbackEl.innerHTML = `✅ ดีมาก ตรงคีย์!`; feedbackEl.className = 'pitch-feedback-container active feedback-correct';
                             } else if (diffCents < 0) {
-                                feedbackEl.innerHTML = `⬆️ สูงขึ้นอีกนิด`;
-                                feedbackEl.className = 'pitch-feedback-container active feedback-low';
+                                feedbackEl.innerHTML = `⬆️ สูงขึ้นอีกนิด`; feedbackEl.className = 'pitch-feedback-container active feedback-low';
                             } else {
-                                feedbackEl.innerHTML = `⬇️ ต่ำลงอีกนิด`;
-                                feedbackEl.className = 'pitch-feedback-container active feedback-high';
+                                feedbackEl.innerHTML = `⬇️ ต่ำลงอีกนิด`; feedbackEl.className = 'pitch-feedback-container active feedback-high';
                             }
                         }
                     }
-                    pitchIntervalId = requestAnimationFrame(updatePitch);
-                    return; 
+                    pitchIntervalId = requestAnimationFrame(updatePitch); return; 
                 }
 
-                // --- Vocal Practice & Vocal Test Mode ---
                 if (AppState.gameMode !== 'vocalPractice') { pitchIntervalId = requestAnimationFrame(updatePitch); return; }
                 if (AppState.guideTonePlaying) { pitchIntervalId = requestAnimationFrame(updatePitch); return; }
 
@@ -801,6 +702,19 @@
                 const feedbackEl = document.getElementById('pitch-feedback');
                 
                 if (AppState.currentStep < AppState.sequence.length) {
+                    
+                    if (AppState.isTestMode && AppState.testType === 'vocal') {
+                        let timeTaken = Date.now() - AppState.testStats.currentNoteStartTime;
+                        if (timeTaken > 7000 && AppState.correctFrames < AppState.framesToPass) {
+                            AppState.testStats.noteTimes.push(timeTaken);
+                            AppState.testStats.noteScores.push(0); 
+                            updateHUDScoreOnly();
+                            showFloatingText('Time Out', 'float-miss');
+                            advanceSequence();
+                            return; 
+                        }
+                    }
+
                     const targetNote = AppState.sequence[AppState.currentStep].targetKey;
                     const targetFreq = noteFrequencies[targetNote];
                     
@@ -809,8 +723,7 @@
                         let targetCentsFromA4 = 1200 * Math.log2(targetFreq / 440);
                         let diffCents = (centsFromA4 - targetCentsFromA4) % 1200;
                         
-                        if (diffCents > 600) diffCents -= 1200;
-                        else if (diffCents < -600) diffCents += 1200;
+                        if (diffCents > 600) diffCents -= 1200; else if (diffCents < -600) diffCents += 1200;
 
                         if (Math.abs(diffCents) <= AppState.toleranceCents) {
                             feedbackEl.innerHTML = `✅ ตรงคีย์! ค้างไว้...`;
@@ -820,28 +733,28 @@
                             if (AppState.correctFrames > AppState.framesToPass) {
                                 AppState.correctFrames = 0;
                                 
-                                // === GAMIFICATION SCORING ===
                                 if (AppState.isTestMode && AppState.testType === 'vocal') {
                                     let timeTaken = Date.now() - AppState.testStats.currentNoteStartTime;
-                                    let points = AppState.testStats.baseScore;
-                                    let rating = 'perfect';
+                                    AppState.testStats.noteTimes.push(timeTaken);
+                                    AppState.testStats.correctNoteCount++; 
+
+                                    let noteScore = 0;
+                                    let rating = 'ok';
+                                    if (timeTaken < 2500) { noteScore = 100; rating = 'perfect'; }
+                                    else if (timeTaken < 5000) { noteScore = 50; rating = 'good'; }
+                                    else { noteScore = 25; }
                                     
-                                    if (timeTaken < 1500) { points = Math.floor(points * 1.5); rating = 'perfect'; }
-                                    else if (timeTaken < 3000) { points = points; rating = 'good'; }
-                                    else { points = Math.floor(points * 0.5); rating = 'ok'; }
-                                    
-                                    grantScore(points, rating);
-                                    AppState.testStats.correctNotes++;
+                                    AppState.testStats.noteScores.push(noteScore);
+                                    updateHUDScoreOnly();
+                                    showFloatingText(rating === 'perfect' ? 'Perfect' : (rating === 'good' ? 'Good' : 'OK'), rating === 'perfect' ? 'float-perfect' : 'float-good');
                                 }
                                 advanceSequence(); 
                             }
                         } else if (diffCents < 0) {
-                            feedbackEl.innerHTML = `⬆️ ร้องสูงขึ้นอีกนิด`;
-                            feedbackEl.className = 'pitch-feedback-container active feedback-low';
+                            feedbackEl.innerHTML = `⬆️ ร้องสูงขึ้นอีกนิด`; feedbackEl.className = 'pitch-feedback-container active feedback-low';
                             if (!AppState.isTestMode) AppState.correctFrames = 0; 
                         } else {
-                            feedbackEl.innerHTML = `⬇️ ร้องต่ำลงอีกนิด`;
-                            feedbackEl.className = 'pitch-feedback-container active feedback-high';
+                            feedbackEl.innerHTML = `⬇️ ร้องต่ำลงอีกนิด`; feedbackEl.className = 'pitch-feedback-container active feedback-high';
                             if (!AppState.isTestMode) AppState.correctFrames = 0;
                         }
                     } else if (pitch === -1 && AppState.correctFrames === 0) {
@@ -854,9 +767,6 @@
             updatePitch();
         }
 
-        // =========================================================
-        // 4. METRONOME & CALL-RESPONSE LOGIC
-        // =========================================================
         let beatCount = 0;
         let metronomeIntervalId;
         const drumPatterns = {
@@ -965,7 +875,6 @@
             startStopButton.addEventListener('click', function() {
                 initAudio();
                 if (!AppState.metronomeRunning) {
-                    // หากกดเริ่ม Metronome ให้ยกเลิกโหมด Test ถ่ายโอนกลับมาโหมดซ้อมปกติ
                     if (AppState.isTestMode) abortTestSession();
 
                     AppState.metronomeRunning = true;
@@ -1023,7 +932,7 @@
         }
 
         // =========================================================
-        // 5. GAMIFICATION & TEST LOGIC (ระบบนับคะแนนและสอบ)
+        // 5. STANDARDIZED ASSESSMENT LOGIC (ระบบนับคะแนนและสอบ)
         // =========================================================
 
         function formatTime(ms) {
@@ -1055,13 +964,11 @@
             document.getElementById('hud-timer-box').style.display = 'none';
         }
 
-        function openTestModal() {
-            if (AppState.metronomeRunning) stopMetronomeFull(); // ปิด Metronome ก่อนเริ่มสอบ
+        function openStudentInfoModal() {
+            if (AppState.metronomeRunning) stopMetronomeFull(); 
             
-            // บันทึกสถานะการโชว์ชื่อโน้ตปัจจุบันไว้ ก่อนบังคับซ่อนตอนสอบ
-            AppState.savedNoteNameDisplayMode = AppState.noteNameDisplayMode;
+            document.getElementById('student-info-error').style.display = 'none';
             
-            // เปิดหน้ากรอกข้อมูลนักเรียนก่อนเข้าหน้าเลือกโหมด
             document.getElementById('studentName').value = AppState.student.name;
             document.getElementById('studentClass').value = AppState.student.class;
             document.getElementById('studentNumber').value = AppState.student.number;
@@ -1073,9 +980,9 @@
             const sClass = document.getElementById('studentClass').value.trim();
             const number = document.getElementById('studentNumber').value.trim();
 
-            if (!name || !sClass || !number) {
-                alert('กรุณากรอกข้อมูลให้ครบถ้วนก่อนเริ่มทดสอบครับ');
-                return;
+            if (!name || !sClass || !number) { 
+                document.getElementById('student-info-error').style.display = 'block';
+                return; 
             }
 
             AppState.student.name = name;
@@ -1094,16 +1001,16 @@
             AppState.isTestMode = true;
             AppState.testType = type;
             
-            // Reset Stats
-            AppState.testStats = { score: 0, combo: 0, maxCombo: 0, correctNotes: 0, totalNotes: 9, baseScore: 100, currentNoteStartTime: Date.now() };
-            updateHUD(true); 
+            AppState.testStats = { 
+                noteScores: [], noteTimes: [], mistakesOnCurrentNote: 0, correctNoteCount: 0, totalNotes: 9, currentNoteStartTime: Date.now() 
+            };
+            updateHUDScoreOnly(true);
 
-            // บังคับซ่อนชื่อโน้ตบนกระดานและเปียโนเพื่อเข้าโหมดสอบ
+            AppState.savedNoteNameDisplayMode = AppState.noteNameDisplayMode;
             AppState.noteNameDisplayMode = 'hidden';
             for (let i = 0; i < 9; i++) updateNoteNameForNote(i);
             updatePianoKeyLabels();
 
-            // ปรับ UI ควบคุมปุ่มยกเลิกการสอบ (แสดงเฉพาะตอนสอบ)
             document.getElementById('practice-controls').classList.add('hidden-btn');
             document.getElementById('test-controls').classList.remove('hidden-btn');
             
@@ -1117,7 +1024,6 @@
                 await toggleMic(true); 
             }
 
-            // เริ่มจับเวลา
             startTestTimer();
             startPlayAlongSequence(AppState.currentPositions);
         }
@@ -1126,13 +1032,11 @@
             document.getElementById('score-hud').classList.remove('active');
             stopTestTimer();
             
-            // คืนค่าการแสดงผลชื่อโน้ตกลับเป็นแบบก่อนสอบ
             AppState.noteNameDisplayMode = AppState.savedNoteNameDisplayMode;
             updateNoteNameButtonUI();
             for (let i = 0; i < 9; i++) updateNoteNameForNote(i);
             updatePianoKeyLabels();
 
-            // กลับไปแสดงปุ่มโหมดซ้อม ซ่อนปุ่มยกเลิกสอบ
             document.getElementById('practice-controls').classList.remove('hidden-btn');
             document.getElementById('test-controls').classList.add('hidden-btn');
             
@@ -1146,13 +1050,12 @@
             AppState.testType = null;
             stopAllNotes();
             if (AppState.micActive) toggleMic(false);
-            
             cleanupTestMode();
             startPlayAlongSequence(AppState.currentPositions);
         }
 
         function endTestSession() {
-            AppState.isTestMode = false;
+            AppState.isTestMode = false; 
             stopAllNotes();
             if (AppState.micActive) toggleMic(false);
             stopTestTimer();
@@ -1161,27 +1064,42 @@
             document.getElementById('test-controls').classList.add('hidden-btn');
 
             const type = AppState.testType;
-            const currentScore = AppState.testStats.score;
-            const accuracy = Math.round((AppState.testStats.correctNotes / AppState.testStats.totalNotes) * 100);
+            
+            let sumScores = AppState.testStats.noteScores.reduce((a, b) => a + b, 0);
+            let currentScore = Math.round(sumScores / AppState.testStats.totalNotes); 
+            let accuracy = Math.round((AppState.testStats.correctNoteCount / AppState.testStats.totalNotes) * 100);
+            
+            let sumTimes = AppState.testStats.noteTimes.reduce((a, b) => a + b, 0);
+            let avgFluency = (sumTimes / AppState.testStats.totalNotes / 1000).toFixed(1); 
+            
             const prevData = AppState.history[type];
 
-            // แสดงข้อมูลผู้ทดสอบ
             document.getElementById('summary-student-name').innerText = AppState.student.name;
             document.getElementById('summary-student-class').innerText = AppState.student.class;
             document.getElementById('summary-student-number').innerText = AppState.student.number;
             document.getElementById('summary-time-taken').innerText = formatTime(AppState.timer.elapsedMs);
 
-            // Setup UI Modal
-            document.getElementById('summary-title').innerHTML = type === 'piano' ? '🎹 สรุปผล: โหมดกดเปียโน' : '🎤 สรุปผล: โหมดร้องเสียง';
+            document.getElementById('summary-title').innerHTML = type === 'piano' ? '🎹 รายงานผล: โหมดกดเปียโน' : '🎤 รายงานผล: โหมดร้องเสียง';
             document.getElementById('curr-score').innerText = currentScore;
-            document.getElementById('curr-acc').innerText = `ความแม่นยำ: ${accuracy}%`;
-            document.getElementById('summary-combo').innerText = AppState.testStats.maxCombo;
+            document.getElementById('curr-acc').innerText = accuracy;
+            document.getElementById('curr-fluency').innerText = avgFluency;
 
-            // Comparison Logic
+            const feedbackBox = document.getElementById('feedback-message-box');
+            if (currentScore >= 80) {
+                feedbackBox.innerHTML = "🏆 ยอดเยี่ยมมาก! ทักษะการอ่านโน้ตแม่นยำและคล่องแคล่วระดับมือโปร พร้อมท้าทายในระดับที่ยากขึ้นแล้ว!";
+                feedbackBox.className = "feedback-message-box feedback-excellent";
+            } else if (currentScore >= 60) {
+                feedbackBox.innerHTML = "👍 ทำได้ดีมาก! อ่านโน้ตได้ถูกต้อง แต่อาจจะต้องฝึกความไวอีกนิดเดียว ลองฝึกซ้อมอีกสักรอบเพื่อทำลายสถิติดูนะ!";
+                feedbackBox.className = "feedback-message-box feedback-good";
+            } else {
+                feedbackBox.innerHTML = "💪 เริ่มต้นได้ดี! ค่อยๆ ฝึกไปไม่ต้องรีบนะคะ ลองกลับไปโหมดฝึกซ้อมเพื่อทบทวนตำแหน่งโน้ตอีกนิด แล้วกลับมาสอบใหม่นะ ทำได้แน่นอน!";
+                feedbackBox.className = "feedback-message-box feedback-needs-improvement";
+            }
+
             const prevCard = document.getElementById('card-previous');
             const badge = document.getElementById('comparison-badge');
             
-            if (prevData) {
+            if (prevData && typeof prevData.score !== 'undefined') {
                 prevCard.style.display = 'block';
                 document.getElementById('prev-score').innerText = prevData.score;
                 document.getElementById('prev-acc').innerText = `ความแม่นยำ: ${prevData.accuracy}%`;
@@ -1203,54 +1121,26 @@
                 badge.innerHTML = `🌟 สถิติแรกของคุณถูกบันทึกแล้ว!`;
             }
 
-            // บันทึกคะแนนรอบนี้ทับเป็น "ครั้งก่อนหน้า"
             AppState.history[type] = { score: currentScore, accuracy: accuracy };
             document.getElementById('summaryModal').classList.add('show');
         }
 
         function retryTest() { closeModal('summaryModal'); startTestSession(AppState.testType); }
-        
-        function backToPractice() { 
-            closeModal('summaryModal'); 
-            AppState.testType = null;
-            cleanupTestMode();
-            startPlayAlongSequence(AppState.currentPositions); 
-        }
+        function backToPractice() { closeModal('summaryModal'); abortTestSession(); }
 
-        function grantScore(points, ratingText) {
-            let comboMultiplier = 1 + (AppState.testStats.combo * 0.1);
-            if (comboMultiplier > 2) comboMultiplier = 2;
-            
-            let finalPoints = Math.floor(points * comboMultiplier);
-            AppState.testStats.score += finalPoints;
-            AppState.testStats.combo++;
-            if (AppState.testStats.combo > AppState.testStats.maxCombo) AppState.testStats.maxCombo = AppState.testStats.combo;
-            
-            updateHUD();
-            showFloatingText(`+${finalPoints}`, ratingText === 'perfect' ? 'float-perfect' : 'float-good');
-        }
-
-        function breakCombo() {
-            if (AppState.testStats.combo > 0) {
-                AppState.testStats.combo = 0;
-                updateHUD();
-                showFloatingText('Miss', 'float-miss');
-            }
-        }
-
-        function updateHUD(show = false) {
+        function updateHUDScoreOnly(show = false) {
             const hud = document.getElementById('score-hud');
             const scoreVal = document.getElementById('hud-score-val');
-            const comboVal = document.getElementById('hud-combo-val');
+            const accVal = document.getElementById('hud-acc-val');
             
             if (show) hud.classList.add('active');
-            scoreVal.innerText = AppState.testStats.score;
-            comboVal.innerText = AppState.testStats.combo;
             
-            if (AppState.testStats.combo > 0) {
-                comboVal.parentElement.classList.remove('combo-shake');
-                void comboVal.parentElement.offsetWidth; 
-                comboVal.parentElement.classList.add('combo-shake');
+            if (AppState.testStats.noteScores.length > 0) {
+                let sumScores = AppState.testStats.noteScores.reduce((a, b) => a + b, 0);
+                scoreVal.innerText = Math.round(sumScores / AppState.testStats.noteScores.length);
+                accVal.innerText = Math.round((AppState.testStats.correctNoteCount / AppState.testStats.noteScores.length) * 100);
+            } else {
+                scoreVal.innerText = 0; accVal.innerText = 0;
             }
         }
 
@@ -1270,24 +1160,42 @@
             if (AppState.currentStep >= AppState.sequence.length) return;
             
             const correctNote = AppState.sequence[AppState.currentStep].targetKey;
-            if (pressedNote === correctNote) {
-                // GAMIFICATION PIANO SCORING
-                if (AppState.isTestMode && AppState.testType === 'piano') {
-                    let timeTaken = Date.now() - AppState.testStats.currentNoteStartTime;
-                    let points = AppState.testStats.baseScore;
-                    let rating = 'perfect';
+            
+            const pressedPitchClass = pressedNote.replace(/[0-9]/g, '');
+            const correctPitchClass = correctNote.replace(/[0-9]/g, '');
+            
+            if (AppState.isTestMode && AppState.testType === 'piano') {
+                let timeTaken = Date.now() - AppState.testStats.currentNoteStartTime;
+                AppState.testStats.noteTimes.push(timeTaken);
+
+                if (pressedPitchClass === correctPitchClass) {
+                    let noteScore = 0;
+                    let rating = 'ok';
+                    if (timeTaken < 1500) { noteScore = 100; rating = 'perfect'; }
+                    else if (timeTaken < 3000) { noteScore = 50; rating = 'good'; }
+                    else { noteScore = 25; }
+
+                    AppState.testStats.correctNoteCount++;
+                    AppState.testStats.noteScores.push(noteScore);
+                    updateHUDScoreOnly();
+                    showFloatingText(rating === 'perfect' ? 'Perfect' : (rating === 'good' ? 'Good' : 'OK'), rating === 'perfect' ? 'float-perfect' : 'float-good');
+                    advanceSequence();
+                } else {
+                    AppState.testStats.mistakesOnCurrentNote++;
+                    AppState.testStats.noteScores.push(0);
+                    updateHUDScoreOnly();
+                    showFloatingText('Miss', 'float-miss');
                     
-                    if (timeTaken < 1000) { points = Math.floor(points * 1.5); rating = 'perfect'; }
-                    else if (timeTaken < 2500) { points = points; rating = 'good'; }
-                    else { points = Math.floor(points * 0.5); rating = 'ok'; }
+                    const currentElement = document.querySelectorAll('.whole-note')[AppState.currentStep];
+                    currentElement.classList.add('wrong-pitch');
+                    setTimeout(() => currentElement.classList.remove('wrong-pitch'), 300);
                     
-                    grantScore(points, rating);
-                    AppState.testStats.correctNotes++;
+                    setTimeout(() => { advanceSequence(); }, 300);
                 }
-                advanceSequence();
             } else {
-                if (AppState.isTestMode) {
-                    breakCombo();
+                if (pressedPitchClass === correctPitchClass) {
+                    advanceSequence();
+                } else {
                     const currentElement = document.querySelectorAll('.whole-note')[AppState.currentStep];
                     currentElement.classList.add('wrong-pitch');
                     setTimeout(() => currentElement.classList.remove('wrong-pitch'), 300);
@@ -1326,7 +1234,7 @@
                 updateLedgerLineForNote(i);
                 updateAccidentalForNote(i, null); 
             }
-            AppState.currentStep = 9; // เลี่ยงให้ไม่ไฮไลต์สำหรับโหมดนี้
+            AppState.currentStep = 9; 
         }
 
         function startPlayAlongSequence(positions, waitBeforeStart = false, isCR = false) {
@@ -1362,6 +1270,7 @@
                 if (!isCR) {
                     highlightCurrentNote();
                     AppState.testStats.currentNoteStartTime = Date.now(); 
+                    AppState.testStats.mistakesOnCurrentNote = 0;
                     if (AppState.gameMode === 'vocalPractice' && !AppState.isTestMode) {
                         AppState.correctFrames = 0;
                         resetFeedbackUI();
@@ -1407,11 +1316,16 @@
             AppState.currentStep++;
             
             if (AppState.currentStep >= AppState.sequence.length) {
-                if (AppState.isTestMode) setTimeout(() => endTestSession(), 600); 
-                else setTimeout(() => startPlayAlongSequence(AppState.currentPositions), 600);
+                if (AppState.isTestMode) {
+                    endTestSession(); 
+                } else {
+                    setTimeout(() => startPlayAlongSequence(AppState.currentPositions), 600);
+                }
             } else {
                 highlightCurrentNote();
                 AppState.testStats.currentNoteStartTime = Date.now(); 
+                AppState.testStats.mistakesOnCurrentNote = 0;
+                
                 if (AppState.gameMode === 'vocalPractice' && !AppState.isTestMode) {
                     AppState.correctFrames = 0;
                     resetFeedbackUI();
@@ -1486,9 +1400,15 @@
         }
 
         function cycleNoteNames() {
-            if (AppState.noteNameDisplayMode === 'en') { AppState.noteNameDisplayMode = 'th'; } 
-            else if (AppState.noteNameDisplayMode === 'th') { AppState.noteNameDisplayMode = 'hidden'; } 
-            else { AppState.noteNameDisplayMode = 'en'; }
+            if (AppState.noteNameDisplayMode === 'en') { 
+                AppState.noteNameDisplayMode = 'th'; 
+            } else if (AppState.noteNameDisplayMode === 'th') { 
+                AppState.noteNameDisplayMode = 'handSign'; 
+            } else if (AppState.noteNameDisplayMode === 'handSign') { 
+                AppState.noteNameDisplayMode = 'hidden'; 
+            } else { 
+                AppState.noteNameDisplayMode = 'en'; 
+            }
             
             updateNoteNameButtonUI();
             for (let i = 0; i < 9; i++) updateNoteNameForNote(i);
@@ -1498,11 +1418,14 @@
         function updateNoteNameButtonUI() {
             const button = document.getElementById('toggleNoteNamesButton');
             if (AppState.noteNameDisplayMode === 'en') button.innerHTML = '🇹🇭 ชื่อแบบไทย';
-            else if (AppState.noteNameDisplayMode === 'th') button.innerHTML = '👁️ ซ่อนชื่อ';
+            else if (AppState.noteNameDisplayMode === 'th') button.innerHTML = '👋 ภาษามือ';
+            else if (AppState.noteNameDisplayMode === 'handSign') button.innerHTML = '👁️ ซ่อนชื่อ';
             else if (AppState.noteNameDisplayMode === 'hidden') button.innerHTML = '🔤 ชื่อสากล';
             
             const buttons = document.querySelectorAll('.button-group button');
-            buttons.forEach((btn, idx) => { btn.textContent = (AppState.noteNameDisplayMode === 'th') ? buttonGroupData[idx].th_short : buttonGroupData[idx].en; });
+            buttons.forEach((btn, idx) => { 
+                btn.textContent = (AppState.noteNameDisplayMode === 'th') ? buttonGroupData[idx].th_short : buttonGroupData[idx].en; 
+            });
         }
 
         function updateNoteNameForNote(index) {
@@ -1510,13 +1433,41 @@
             const noteNameElement = notePosition.querySelector('.note-name');
             const accElement = notePosition.querySelector('.accidental');
             const noteTop = AppState.currentNoteTops[index];
-            if (noteTop === null || AppState.noteNameDisplayMode === 'hidden') { noteNameElement.classList.add('hidden'); return; }
+            
+            if (noteTop === null || AppState.noteNameDisplayMode === 'hidden') { 
+                noteNameElement.classList.add('hidden'); 
+                return; 
+            }
+            
             noteNameElement.classList.remove('hidden');
             const noteInfo = noteData[noteTop.toString()];
-            let text = AppState.noteNameDisplayMode === 'en' ? noteInfo.en : noteInfo.th;
-            if (AppState.noteNameDisplayMode === 'th' && accElement.style.display !== 'none') text += accElement.textContent;
-            noteNameElement.textContent = text;
-            noteNameElement.style.top = `${noteTop + 35}px`;
+            
+            if (AppState.noteNameDisplayMode === 'handSign') {
+                noteNameElement.style.background = 'transparent';
+                noteNameElement.style.boxShadow = 'none';
+                noteNameElement.style.width = '60px'; 
+                noteNameElement.style.marginLeft = '-12.5px'; 
+                
+                const imgUrl = handSignImages[noteInfo.en];
+                noteNameElement.innerHTML = `<img src="${imgUrl}" alt="Hand Sign ${noteInfo.en}" style="width: 60px; height: 60px; object-fit: contain; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.2));">`;
+                
+                // Smart Positioning: หลบหลีกการบดบังตัวโน้ต
+                if (noteTop >= 50) {
+                    noteNameElement.style.top = `${noteTop - 75}px`; // ขยับขึ้นไปพ้นหัวโน้ตและเส้นน้อย
+                } else {
+                    noteNameElement.style.top = `${noteTop + 45}px`; // ขยับลงมาให้สวยงาม
+                }
+            } else {
+                noteNameElement.style.background = 'rgba(255, 255, 255, 0.8)';
+                noteNameElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                noteNameElement.style.width = '45px';
+                noteNameElement.style.marginLeft = '0';
+                noteNameElement.style.top = `${noteTop + 35}px`;
+                
+                let text = AppState.noteNameDisplayMode === 'en' ? noteInfo.en : noteInfo.th;
+                if (AppState.noteNameDisplayMode === 'th' && accElement.style.display !== 'none') text += accElement.textContent;
+                noteNameElement.innerHTML = text;
+            }
         }
 
         function updateLedgerLineForNote(index) {
@@ -1542,24 +1493,6 @@
                 accElement.style.top = `${parseInt(noteElement.style.top) + (symbolToDisplay === '♯' ? -10 : -20)}px`;
                 accElement.style.display = 'block';
             } else { accElement.style.display = 'none'; }
-        }
-
-        function playCurrentGuideTone() {
-            if (AppState.currentStep < AppState.sequence.length && AppState.gameMode === 'vocalPractice') {
-                stopAllNotes(); initAudio();
-                const note = AppState.sequence[AppState.currentStep].targetKey;
-                playNote(note);
-                AppState.guideTonePlaying = true; 
-                
-                const currentElement = document.querySelectorAll('.whole-note')[AppState.currentStep];
-                currentElement.style.transform = 'scale(1.3)';
-                
-                setTimeout(() => {
-                    stopSpecificNote(note); 
-                    currentElement.style.transform = '';
-                    setTimeout(() => { AppState.guideTonePlaying = false; resetFeedbackUI(); }, 200); 
-                }, 1000);
-            }
         }
 
         // --- Init & Setup ---
@@ -1616,6 +1549,11 @@
             'C5': 'ด', 'Db5': ['ด♯', 'ร♭'], 'D5': 'ร', 'Eb5': ['ร♯', 'ม♭'], 'E5': 'ม', 'F5': 'ฟ', 'Gb5': ['ฟ♯', 'ซ♭'], 'G5': 'ซ', 'Ab5': ['ซ♯', 'ล♭'], 'A5': 'ล', 'Bb5': ['ล♯', 'ท♭'], 'B5': 'ท'
         };
 
+        const pianoKeyInternationalNames = {
+            'Db4': 'C♯<br>D♭', 'Eb4': 'D♯<br>E♭', 'Gb4': 'F♯<br>G♭', 'Ab4': 'G♯<br>A♭', 'Bb4': 'A♯<br>B♭',
+            'Db5': 'C♯<br>D♭', 'Eb5': 'D♯<br>E♭', 'Gb5': 'F♯<br>G♭', 'Ab5': 'G♯<br>A♭', 'Bb5': 'A♯<br>B♭'
+        };
+
         function updatePianoKeyLabels() {
             document.querySelectorAll('.piano .key').forEach(key => {
                 const note = key.dataset.note;
@@ -1627,10 +1565,30 @@
                     label.innerHTML = Array.isArray(tName) ? `${tName[0]}<br>${tName[1]}` : tName;
                 } else {
                     if (key.classList.contains('black')) {
-                        label.innerHTML = `${note.charAt(0)}♯<br>${String.fromCharCode(note.charCodeAt(0)+1)}♭`;
-                    } else { label.textContent = note.replace(/[0-9]/g, ''); }
+                        label.innerHTML = pianoKeyInternationalNames[note] || '';
+                    } else { 
+                        label.textContent = note.replace(/[0-9]/g, ''); 
+                    }
                 }
             });
+        }
+
+        function playCurrentGuideTone() {
+            if (AppState.currentStep < AppState.sequence.length && AppState.gameMode === 'vocalPractice') {
+                stopAllNotes(); initAudio();
+                const note = AppState.sequence[AppState.currentStep].targetKey;
+                playNote(note);
+                AppState.guideTonePlaying = true; 
+                
+                const currentElement = document.querySelectorAll('.whole-note')[AppState.currentStep];
+                currentElement.style.transform = 'scale(1.3)';
+                
+                setTimeout(() => {
+                    stopSpecificNote(note); 
+                    currentElement.style.transform = '';
+                    setTimeout(() => { AppState.guideTonePlaying = false; resetFeedbackUI(); }, 200); 
+                }, 1000);
+            }
         }
 
         window.onload = function() {
@@ -1641,7 +1599,7 @@
             setupPiano();
             document.getElementById('togglePianoButton').addEventListener('click', togglePianoMode);
             document.getElementById('openMetronomeBtn').addEventListener('click', () => document.getElementById('metronomeModal').classList.add('show'));
-            document.getElementById('copyright-notice').textContent = `© ${new Date().getFullYear()} ว่าที่ร้อยตรีมติพัฒน์ เชิดสุข. สงวนลิขสิทธิ์.`;
+            document.getElementById('copyright-notice').textContent = `© ${new Date().getFullYear()} ว่าที่ร้อยตรีมติพัฒน์ เชิดสุข. เครื่องมือวัดและประเมินผลทักษะดนตรีสากล.`;
         };
     </script>
 </body>
