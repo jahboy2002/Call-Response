@@ -191,11 +191,39 @@
         .btn-back { background: #edf2f7; color: #4a5568; }
         .action-btn:hover { transform: translateY(-2px); }
 
-        /* === Piano Styles === */
-        .piano-container { display: flex; justify-content: center; transition: opacity 0.3s ease, transform 0.3s ease; }
+        /* === Piano Styles (Dual-Mode: Static / Floating Minimal UI) === */
+        .piano-container { display: flex; flex-direction: column; align-items: center; transition: opacity 0.3s ease, transform 0.3s ease; position: relative; z-index: 100; --user-scale: 1; }
         .piano-container.hidden { opacity: 0; transform: scale(0.95) translateY(-20px); pointer-events: none; height: 0; margin: 0; overflow: hidden; }
 
-        .piano { display: flex; position: relative; background: #1a202c; padding: 12px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 4px 0 rgba(255,255,255,0.1); }
+        /* Wrapper รวบรวมเปียโนและเครื่องมือด้านขวา เพื่อให้ซูมไปด้วยกัน */
+        .piano-wrapper { display: flex; align-items: flex-end; gap: 10px; transform: scale(var(--user-scale)); transform-origin: top center; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        .piano-container.floating { position: fixed; top: 65%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; margin: 0; width: auto; pointer-events: none; }
+        .piano-container.floating.is-dragging { transition: none; }
+        .piano-container.floating.hidden { display: none !important; }
+        
+        /* หลังคาเปียโนกลายเป็นจุดจับลาก (เพิ่ม padding-top ให้มีพื้นที่จับ) */
+        .piano { display: flex; position: relative; background: #1a202c; padding: 12px; padding-top: 24px; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.4), inset 0 4px 0 rgba(255,255,255,0.1); pointer-events: auto; }
+        .piano-container.floating .piano { cursor: grab; box-shadow: 0 25px 50px rgba(0,0,0,0.6), inset 0 4px 0 rgba(255,255,255,0.1); }
+        .piano-container.floating.is-dragging .piano { cursor: grabbing; }
+
+        /* ปุ่มปลดล็อคด้านขวา (แสดงเฉพาะตอนเปียโนอยู่กับที่) */
+        .btn-unlock-static { background: #edf2f7; color: #4a5568; border: 2px dashed #cbd5e0; width: 44px; height: 44px; border-radius: 10px; font-size: 20px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 2px; }
+        .btn-unlock-static:hover { background: #e2e8f0; border-color: #a0aec0; transform: translateY(-2px); }
+        .btn-unlock-static:active { transform: scale(0.95); }
+        .piano-container.floating .btn-unlock-static { display: none; }
+
+        /* แผงควบคุมจิ๋วแนวตั้งด้านขวา (Vertical Mini-Toolbar) แสดงเฉพาะตอนลอย */
+        .side-floating-controls { display: none; flex-direction: column; align-items: center; background: #1a202c; padding: 10px 8px; border-radius: 12px; gap: 8px; box-shadow: 0 15px 30px rgba(0,0,0,0.5), inset 0 2px 0 rgba(255,255,255,0.1); pointer-events: auto; margin-bottom: 2px; }
+        .piano-container.floating .side-floating-controls { display: flex; }
+        
+        .side-btn { background: #2d3748; color: white; border: none; width: 40px; height: 40px; border-radius: 8px; font-size: 18px; display: flex; justify-content: center; align-items: center; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+        .side-btn:hover { background: #4a5568; transform: translateY(-2px); }
+        .side-btn:active { transform: scale(0.95); }
+        
+        .btn-lock { background: var(--danger); margin-top: 10px; font-size: 16px; }
+        .btn-lock:hover { background: #c53030; }
+
         .key { cursor: pointer; box-sizing: border-box; transition: background-color 0.1s ease, transform 0.05s ease; position: relative; display: flex; justify-content: center; user-select: none; }
         .key.white { width: 54px; height: 180px; background: linear-gradient(to bottom, #ffffff 0%, #f0f0f0 100%); border-radius: 0 0 6px 6px; border: 1px solid #ccc; border-top: none; align-items: flex-end; box-shadow: inset 0 -2px 5px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.2); margin: 0 1px; z-index: 1; }
         .key.white.active { background: #e2e8f0; transform: rotateX(2deg) translateY(2px); box-shadow: inset 0 2px 5px rgba(0,0,0,0.1); }
@@ -218,15 +246,16 @@
         .tilt-icon { font-size: 48px; display: inline-block; margin-bottom: 10px; animation: tilt-phone 2s infinite ease-in-out; }
         @keyframes tilt-phone { 0%, 10% { transform: rotate(0deg); } 40%, 60% { transform: rotate(-90deg); } 90%, 100% { transform: rotate(0deg); } }
 
+        /* ปรับ Media Queries ให้ Scale Wrapper แทนเปียโนเดี่ยวๆ เพื่อให้กล่องเครื่องมือย่อตามไปด้วย */
         @media (max-width: 768px) {
             .card { padding: 15px; } 
-            .piano { transform: scale(0.65); transform-origin: top center; margin-bottom: -30px; } 
+            .piano-container:not(.floating) .piano-wrapper { transform: scale(0.65); transform-origin: top center; margin-bottom: -30px; } 
             .main-controls button { padding: 10px 16px; font-size: 14px; } 
             .score-hud { top: 5px; right: 10px; gap: 8px; } .hud-box { padding: 6px 12px; font-size: 14px; }
             .score-card { min-width: 45%; }
         }
         @media (max-width: 768px) and (orientation: portrait) { .landscape-warning { display: flex; } .staff-scale-wrapper, .score-hud { opacity: 0; pointer-events: none; } }
-        @media (max-width: 500px) { .piano { transform: scale(0.48); margin-bottom: -60px;} }
+        @media (max-width: 500px) { .piano-container:not(.floating) .piano-wrapper { transform: scale(0.48); margin-bottom: -60px;} }
     </style>
 </head>
 <body>
@@ -264,12 +293,27 @@
     </div>
     
     <!-- Area 2: Piano -->
-    <div class="piano-container full-width">
-        <div class="piano">
-            <!-- White Keys -->
-            <div class="key white" data-note="C4"></div><div class="key white" data-note="D4"></div><div class="key white" data-note="E4"></div><div class="key white" data-note="F4"></div><div class="key white" data-note="G4"></div><div class="key white" data-note="A4"></div><div class="key white" data-note="B4"></div><div class="key white" data-note="C5"></div><div class="key white" data-note="D5"></div><div class="key white" data-note="E5"></div><div class="key white" data-note="F5"></div><div class="key white" data-note="G5"></div><div class="key white" data-note="A5"></div><div class="key white" data-note="B5"></div>
-            <!-- Black Keys -->
-            <div class="key black" data-note="Db4"></div><div class="key black" data-note="Eb4"></div><div class="key black" data-note="Gb4"></div><div class="key black" data-note="Ab4"></div><div class="key black" data-note="Bb4"></div><div class="key black" data-note="Db5"></div><div class="key black" data-note="Eb5"></div><div class="key black" data-note="Gb5"></div><div class="key black" data-note="Ab5"></div><div class="key black" data-note="Bb5"></div>
+    <div class="piano-container full-width" id="pianoContainer">
+        <!-- Wrapper สำหรับเปียโนและเครื่องมือต่างๆ -->
+        <div class="piano-wrapper" id="pianoWrapper">
+            <!-- ตัวคีย์บอร์ดเปียโน -->
+            <div class="piano" id="pianoDragArea">
+                <!-- White Keys -->
+                <div class="key white" data-note="C4"></div><div class="key white" data-note="D4"></div><div class="key white" data-note="E4"></div><div class="key white" data-note="F4"></div><div class="key white" data-note="G4"></div><div class="key white" data-note="A4"></div><div class="key white" data-note="B4"></div><div class="key white" data-note="C5"></div><div class="key white" data-note="D5"></div><div class="key white" data-note="E5"></div><div class="key white" data-note="F5"></div><div class="key white" data-note="G5"></div><div class="key white" data-note="A5"></div><div class="key white" data-note="B5"></div>
+                <!-- Black Keys -->
+                <div class="key black" data-note="Db4"></div><div class="key black" data-note="Eb4"></div><div class="key black" data-note="Gb4"></div><div class="key black" data-note="Ab4"></div><div class="key black" data-note="Bb4"></div><div class="key black" data-note="Db5"></div><div class="key black" data-note="Eb5"></div><div class="key black" data-note="Gb5"></div><div class="key black" data-note="Ab5"></div><div class="key black" data-note="Bb5"></div>
+            </div>
+            
+            <!-- ปุ่มดึงเปียโนออก (แสดงเฉพาะตอนอยู่กับที่ แนบอยู่ทางขวา) -->
+            <button id="staticUnlockBtn" class="btn-unlock-static" onclick="toggleFloatingPiano()" title="ดึงเปียโนออกเป็นหน้าต่างลอย">🔓</button>
+            
+            <!-- แผงควบคุมจิ๋วแนวตั้ง (แสดงเฉพาะตอนลอยตัว) -->
+            <div class="side-floating-controls" id="sideControls">
+                <button class="side-btn" onclick="adjustPianoScale(0.1)" title="ขยายขนาด">➕</button>
+                <button class="side-btn" onclick="adjustPianoScale(-0.1)" title="ย่อขนาด">➖</button>
+                <div style="flex-grow: 1;"></div> <!-- ตัวดันระยะห่างให้อยู่ล่างสุด -->
+                <button class="side-btn btn-lock" onclick="toggleFloatingPiano()" title="ล็อคกลับตำแหน่งเดิม">🔒</button>
+            </div>
         </div>
     </div>
 
@@ -478,6 +522,7 @@
             savedNoteNameDisplayMode: 'en', 
             currentNoteTops: new Array(9).fill(null), 
             isAccidentalMode: false,
+            isPianoFloating: false, // สถานะคีย์บอร์ดลอยตัว
             
             // Audio & Mic States
             micActive: false,
@@ -1652,6 +1697,108 @@
             });
         }
 
+        // --- Floating Piano Logic (Minimal UI) ---
+        function setupFloatingPiano() {
+            const dragArea = document.getElementById('pianoDragArea');
+            const container = document.getElementById('pianoContainer');
+            
+            let isDragging = false;
+            let startX, startY, initialLeft, initialTop;
+
+            const dragStart = (e) => {
+                if (!AppState.isPianoFloating) return;
+                // ป้องกันการลากหากไปกดโดนลิ่มคีย์เปียโน หรือแผงควบคุม
+                if (e.target.closest('.key') || e.target.closest('.side-floating-controls')) return;
+                
+                isDragging = true;
+                container.classList.add('is-dragging');
+                
+                const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                
+                startX = clientX;
+                startY = clientY;
+                
+                // แปลงค่า translate(-50%, -50%) เริ่มต้น ให้กลายเป็นพิกัด X, Y แบบ absolute เพื่อลากแบบไม่กระตุก
+                if (container.style.transform.includes('translate')) {
+                    const rect = container.getBoundingClientRect();
+                    container.style.left = rect.left + 'px';
+                    container.style.top = rect.top + 'px';
+                    container.style.transform = 'none';
+                }
+                
+                initialLeft = parseFloat(container.style.left) || 0;
+                initialTop = parseFloat(container.style.top) || 0;
+
+                document.addEventListener('mousemove', dragMove);
+                document.addEventListener('touchmove', dragMove, {passive: false});
+                document.addEventListener('mouseup', dragEnd);
+                document.addEventListener('touchend', dragEnd);
+            };
+
+            const dragMove = (e) => {
+                if (!isDragging) return;
+                e.preventDefault(); 
+                const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                
+                const dx = clientX - startX;
+                const dy = clientY - startY;
+                
+                container.style.left = `${initialLeft + dx}px`;
+                container.style.top = `${initialTop + dy}px`;
+            };
+
+            const dragEnd = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                container.classList.remove('is-dragging');
+                document.removeEventListener('mousemove', dragMove);
+                document.removeEventListener('touchmove', dragMove);
+                document.removeEventListener('mouseup', dragEnd);
+                document.removeEventListener('touchend', dragEnd);
+            };
+
+            dragArea.addEventListener('mousedown', dragStart);
+            dragArea.addEventListener('touchstart', dragStart, {passive: false});
+        }
+
+        function toggleFloatingPiano() {
+            AppState.isPianoFloating = !AppState.isPianoFloating;
+            const container = document.getElementById('pianoContainer');
+            
+            if (AppState.isPianoFloating) {
+                container.classList.add('floating');
+                
+                // กำหนดตำแหน่งลอยเริ่มต้น (ตรงกลางค่อนไปทางล่าง)
+                container.style.left = '50%';
+                container.style.top = '70%';
+                container.style.transform = 'translate(-50%, -50%)';
+            } else {
+                container.classList.remove('floating');
+                
+                // ล้างสไตล์อินไลน์ทั้งหมดเพื่อให้กลับไปใช้ CSS แบบ Static ฝังตัวเดิม
+                container.style.left = '';
+                container.style.top = '';
+                container.style.transform = '';
+                container.style.setProperty('--user-scale', '1');
+            }
+        }
+
+        function adjustPianoScale(step) {
+            if (!AppState.isPianoFloating) return;
+            const container = document.getElementById('pianoContainer');
+            let currentScale = parseFloat(getComputedStyle(container).getPropertyValue('--user-scale')) || 1;
+            
+            currentScale += step;
+            
+            // จำกัดขนาดไม่ให้เล็กหรือใหญ่เกินไป (40% - 150%)
+            if (currentScale < 0.4) currentScale = 0.4;
+            if (currentScale > 1.5) currentScale = 1.5;
+            
+            container.style.setProperty('--user-scale', currentScale);
+        }
+
         window.onload = function() {
             createNoteElements();
             createButtonGroupButtons();
@@ -1659,9 +1806,10 @@
             startPlayAlongSequence(AppState.currentPositions); 
             setupMetronome();
             setupPiano();
+            setupFloatingPiano(); // ตั้งค่าระบบเปียโนลอยตัวด้วยหลังคาเปียโน
             document.getElementById('togglePianoButton').addEventListener('click', togglePianoMode);
             document.getElementById('openMetronomeBtn').addEventListener('click', () => document.getElementById('metronomeModal').classList.add('show'));
-            document.getElementById('copyright-notice').textContent = `© ${new Date().getFullYear()} ว่าที่ร้อยตรีมติพัฒน์ เชิดสุข. เครื่องมือวัดและประเมินผลทักษะดนตรีสากล.`;
+            document.getElementById('copyright-notice').textContent = `© ${new Date().getFullYear()} ว่าที่ร้อยตรีมติพัฒน์ เชิดสุข โรงเรียนธัญรัตน์`;
         };
     </script>
 </body>
