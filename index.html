@@ -351,7 +351,6 @@
 
     <footer class="site-footer card full-width">
         <p id="copyright-notice"></p>
-        <p>เครื่องมือวัดและประเมินผลทักษะการอ่านโน้ตดนตรีสากล</p>
     </footer>
 
 </div>
@@ -466,7 +465,8 @@
         
         <div class="student-info-box" style="margin-bottom: 15px;">
             <h3 id="summary-student-name">ชื่อผู้สอบ</h3>
-            <p>ชั้น ม.<span id="summary-student-class">-</span> | เลขที่ <span id="summary-student-number">-</span> | เวลาที่ใช้สอบ: <strong id="summary-time-taken" style="color: var(--primary);">00:00</strong> นาที</p>
+            <p>ชั้น ม.<span id="summary-student-class">-</span> | เลขที่ <span id="summary-student-number">-</span></p>
+            <p style="margin-top: 5px;">เวลาที่ใช้: <strong id="summary-time-taken" style="color: var(--primary);">00:00</strong> นาที | ระดับที่สอบ: <strong id="summary-test-level" style="color: var(--purple);">-</strong></p>
         </div>
 
         <div class="summary-dashboard">
@@ -1170,10 +1170,19 @@
             
             const prevData = AppState.history[type];
 
+            // ค้นหาระดับโน้ตที่เพิ่งสอบเสร็จ
+            let levelName = "-";
+            const currentPosStr = AppState.currentPositions.toString();
+            const levelInfo = buttonGroupData.find(data => data.positions.toString() === currentPosStr);
+            if (levelInfo) {
+                levelName = `${levelInfo.en} (${levelInfo.th})`;
+            }
+
             document.getElementById('summary-student-name').innerText = AppState.student.name;
             document.getElementById('summary-student-class').innerText = AppState.student.class;
             document.getElementById('summary-student-number').innerText = AppState.student.number;
             document.getElementById('summary-time-taken').innerText = formatTime(AppState.timer.elapsedMs);
+            document.getElementById('summary-test-level').innerText = levelName;
 
             document.getElementById('summary-title').innerHTML = type === 'piano' ? '🎹 รายงานผล: โหมดกดเปียโน' : '🎤 รายงานผล: โหมดร้องเสียง';
             document.getElementById('curr-score').innerText = currentScore;
@@ -1806,10 +1815,9 @@
             startPlayAlongSequence(AppState.currentPositions); 
             setupMetronome();
             setupPiano();
-            setupFloatingPiano(); // ตั้งค่าระบบเปียโนลอยตัวด้วยหลังคาเปียโน
             document.getElementById('togglePianoButton').addEventListener('click', togglePianoMode);
             document.getElementById('openMetronomeBtn').addEventListener('click', () => document.getElementById('metronomeModal').classList.add('show'));
-            document.getElementById('copyright-notice').textContent = `© ${new Date().getFullYear()} ว่าที่ร้อยตรีมติพัฒน์ เชิดสุข โรงเรียนธัญรัตน์`;
+            document.getElementById('copyright-notice').innerHTML = `© ${new Date().getFullYear()} ว่าที่ร้อยตรีมติพัฒน์ เชิดสุข โรงเรียนธัญรัตน์<br><span style="font-size: 13px; opacity: 0.8;">เครื่องมือวัดและประเมินผลทักษะการอ่านโน้ตดนตรีสากล</span>`;
         };
     </script>
 </body>
