@@ -248,13 +248,15 @@
 
         /* ปรับ Media Queries ให้ Scale Wrapper แทนเปียโนเดี่ยวๆ เพื่อให้กล่องเครื่องมือย่อตามไปด้วย */
         @media (max-width: 768px) {
-            .card { padding: 15px; } 
+            .card { padding: 15px; } .staff-content { padding-left: 60px; padding-right: 10px; } .g-clef { height: 140px; left: 5px; top: -15px; } .whole-note { width: 28px; } .ledger-line { width: 45px; } .accidental { font-size: 30px; transform: translateX(-35px); } 
+            /* ปรับให้ .piano-wrapper ย่อส่วนแทน .piano */
             .piano-container:not(.floating) .piano-wrapper { transform: scale(0.65); transform-origin: top center; margin-bottom: -30px; } 
-            .main-controls button { padding: 10px 16px; font-size: 14px; } 
+            .main-controls button { padding: 10px 16px; font-size: 14px; } .note-name { font-size: 12px; width: 35px; }
             .score-hud { top: 5px; right: 10px; gap: 8px; } .hud-box { padding: 6px 12px; font-size: 14px; }
             .score-card { min-width: 45%; }
         }
-        @media (max-width: 768px) and (orientation: portrait) { .landscape-warning { display: flex; } .staff-scale-wrapper, .score-hud { opacity: 0; pointer-events: none; } }
+        @media (max-width: 768px) and (orientation: portrait) { .landscape-warning { display: flex; } .staff-content, .score-hud { opacity: 0; pointer-events: none; } }
+        /* ปรับให้ .piano-wrapper ย่อส่วนแทน .piano */
         @media (max-width: 500px) { .piano-container:not(.floating) .piano-wrapper { transform: scale(0.48); margin-bottom: -60px;} }
     </style>
 </head>
@@ -1706,13 +1708,21 @@
             });
         }
 
-        // --- Floating Piano Logic (Minimal UI) ---
+        // --- Floating Piano Logic (Minimal UI & Robust Drag) ---
         function setupFloatingPiano() {
             const dragArea = document.getElementById('pianoDragArea');
             const container = document.getElementById('pianoContainer');
             
             let isDragging = false;
             let startX, startY, initialLeft, initialTop;
+
+            // ฟังก์ชันคำนวณพิกัดรองรับทั้งเมาส์และนิ้ว
+            function getCoords(e) {
+                if (e.touches && e.touches.length > 0) {
+                    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+                return { x: e.clientX, y: e.clientY };
+            }
 
             const dragStart = (e) => {
                 if (!AppState.isPianoFloating) return;
@@ -1722,11 +1732,9 @@
                 isDragging = true;
                 container.classList.add('is-dragging');
                 
-                const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-                const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
-                
-                startX = clientX;
-                startY = clientY;
+                const coords = getCoords(e);
+                startX = coords.x;
+                startY = coords.y;
                 
                 // แปลงค่า translate(-50%, -50%) เริ่มต้น ให้กลายเป็นพิกัด X, Y แบบ absolute เพื่อลากแบบไม่กระตุก
                 if (container.style.transform.includes('translate')) {
@@ -1739,6 +1747,11 @@
                 initialLeft = parseFloat(container.style.left) || 0;
                 initialTop = parseFloat(container.style.top) || 0;
 
+                // ป้องกันปัญหาการเลื่อนหน้าจอหรือพฤติกรรมแปลกๆ บนมือถือขณะกดเริ่มลาก
+                if (e.type === 'touchstart') {
+                    // e.preventDefault(); // เอาออกชั่วคราวเผื่อกระทบกับ scroll ในบางเคส
+                }
+
                 document.addEventListener('mousemove', dragMove);
                 document.addEventListener('touchmove', dragMove, {passive: false});
                 document.addEventListener('mouseup', dragEnd);
@@ -1747,12 +1760,11 @@
 
             const dragMove = (e) => {
                 if (!isDragging) return;
-                e.preventDefault(); 
-                const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
-                const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+                e.preventDefault(); // ป้องกันหน้าจอเลื่อนเวลาลาก
                 
-                const dx = clientX - startX;
-                const dy = clientY - startY;
+                const coords = getCoords(e);
+                const dx = coords.x - startX;
+                const dy = coords.y - startY;
                 
                 container.style.left = `${initialLeft + dx}px`;
                 container.style.top = `${initialTop + dy}px`;
@@ -1815,6 +1827,7 @@
             startPlayAlongSequence(AppState.currentPositions); 
             setupMetronome();
             setupPiano();
+            setupFloatingPiano(); // ตั้งค่าระบบเปียโนลอยตัวด้วยหลังคาเปียโน
             document.getElementById('togglePianoButton').addEventListener('click', togglePianoMode);
             document.getElementById('openMetronomeBtn').addEventListener('click', () => document.getElementById('metronomeModal').classList.add('show'));
             document.getElementById('copyright-notice').innerHTML = `© ${new Date().getFullYear()} ว่าที่ร้อยตรีมติพัฒน์ เชิดสุข โรงเรียนธัญรัตน์<br><span style="font-size: 13px; opacity: 0.8;">เครื่องมือวัดและประเมินผลทักษะการอ่านโน้ตดนตรีสากล</span>`;
